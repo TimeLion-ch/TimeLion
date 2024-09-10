@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block navbar %}
+	<li class="nav-item">
+		<a class="nav-link" href="">{{ 'home'|trans }}</a>
+	</li>
+	<li class="nav-item">
+		<a class="nav-link" href="">{{ 'my_polls'|trans }}</a>
+	</li>
+	<li class="nav-item">
+		<a class="nav-link text-secondary" href="">{{ 'log_out'|trans }}</a>
+	</li>
+{% endblock %}

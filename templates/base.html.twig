@@ -1,17 +1,62 @@
+{% apply spaceless %}
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+		<title>TimeLion</title>
+		<meta name="description" content="A simple time scheduling tool."/>
+		<meta name="author" content="TimeLion.ch"/>
+		<link rel="icon" href="{{ asset('assets/logo/logo_ico.png') }}">
+		{% if app.environment != 'dev' %}
+			<link rel="stylesheet" href="{{ asset('assets/css/bootstrap-5.2.3.min.css') }}">
+		{% else %}
+			<link rel="stylesheet" href="{{ asset('assets/css/bootstrap-5.2.3.css') }}">
+		{% endif %}
+		<link rel="preconnect" href="https://fonts.googleapis.com"/>
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+		<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet"/>
+	</head>
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
-    </head>
-    <body>
-        {% block body %}{% endblock %}
-    </body>
+	<body class="d-flex flex-column h-100">
+		<main>
+			<nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+				<div class="container px-5">
+					<a class="navbar-brand" href="{{ path('home') }}">
+						<img src="{{ asset('assets/logo/logo_sm.png') }}" height="40"/>
+						<span class="fw-bolder text-primary mx-2">TimeLion</span>
+					</a>
+					<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="navbar">
+						<ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+							{% block navbar %}
+								<li class="nav-item">
+									<a class="nav-link text-secondary" href="">{{ 'log_in'|trans }}</a>
+								</li>
+							{% endblock %}
+							<li class="nav-item">
+								<a class="nav-link dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									{{ app.request.locale|upper }}
+								</a>
+								<div class="dropdown-menu">
+									{% set languagesArray = ['de', 'en'] %}
+									{% for language in languagesArray %}
+										<a class="dropdown-item" href="{{ path('set_language', {'language': language}) }}">{{ language|upper }}</a>
+									{% endfor %}
+								</div>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+			{% block body %}{% endblock %}
+		</main>
+		 <script src="{{ asset('assets/js/jquery-3.7.1.min.js') }}"></script>
+	 <script src="{{ asset('assets/js/popper-1.12.9.min.js') }}"></script>
+		 <script src="{{ asset('assets/js/bootstrap-4.0.0.min.js') }}"></script>
+	</body>
 </html>
+{% endapply %}
