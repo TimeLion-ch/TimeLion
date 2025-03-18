@@ -21,3 +21,14 @@ If you want to host TimeLion on your own hardware, you need to install the follo
 	~/TimeLion$ php bin/console make:migration
 	~/TimeLion$ php bin/console doctrine:migrations:migrate
 	```
+
+# Deployment
+## Local testing
+You can run a local development server using the following commands:
+```bash
+~/TimeLion$ cd public
+~/TimeLion/public$ sudo php -S localhost:80
+```
+
+## Running on webserver
+You can run TimeLion on any webserver. Just make sure to install all dependencies using Composer and make sure that the hosting root points to `{path to TimeLion}/public/`.
