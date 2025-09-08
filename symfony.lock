@@ -244,16 +244,17 @@
         ]
     },
     "symfony/stimulus-bundle": {
-        "version": "2.19",
+        "version": "2.30",
         "recipe": {
             "repo": "github.com/symfony/recipes",
             "branch": "main",
-            "version": "2.13",
-            "ref": "6acd9ff4f7fd5626d2962109bd4ebab351d43c43"
+            "version": "2.20",
+            "ref": "c30f782a8910ae9f12e7a1399db607d172d23da6"
         },
         "files": [
             "assets/bootstrap.js",
             "assets/controllers.json",
+            "assets/controllers/csrf_protection_controller.js",
             "assets/controllers/hello_controller.js"
         ]
     },
