@@ -7,7 +7,7 @@
 <footer>
 	<div class="container">
 		<span>{t('footer.copyright', { year })}</span>
-		<a href="https://github.com/TimeLion-ch/TimeLion" rel="noreferrer">{t('footer.source')}</a>
+		<a href="https://github.com/TimeLion-ch/TimeLion" rel="noreferrer" target="_blank">{t('footer.source')}</a>
 	</div>
 </footer>
 
