@@ -116,7 +116,11 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      # A fixed root version keeps the commit hash out of vendor/composer/installed.php, so vendor/ changes only with
+      # its contents and deploy-ftp.sh can skip uploading it.
       - name: Install production dependencies
+        env:
+          COMPOSER_ROOT_VERSION: dev-main
         run: composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader --classmap-authoritative
 
       - uses: actions/setup-node@v7
@@ -134,7 +138,8 @@ jobs:
       - name: Assemble release
         run: |
           mkdir -p release/var
-          cp -R bin migrations public src vendor config.example.php release/
+          cp -R .htaccess bin migrations public src vendor config.example.php release/
+          test -f release/.htaccess
           test -f release/public/index.html
           test -f release/public/.htaccess
 
@@ -151,3 +156,5 @@ jobs:
         run: |
           curl --fail --silent --show-error --retry 3 --retry-delay 5 "${DEPLOY_URL%/}/api/health" | grep -q '"status":"ok"'
           curl --fail --silent --show-error "${DEPLOY_URL%/}/" | grep -q '<div id="app">'
+          # Nothing outside public/ is reachable: a file in the app root gets the single-page app, not its own content.
+          curl --fail --silent --show-error "${DEPLOY_URL%/}/config.example.php" | grep -q '<div id="app">'

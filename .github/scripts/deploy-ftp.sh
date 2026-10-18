@@ -61,14 +61,32 @@ fi
 printf '%s' "$token" | openssl dgst -sha256 -r | cut -d' ' -f1 >"$work/deploy-token"
 printf 'Authorization: Bearer %s\n' "$token" >"$work/auth-header"
 
-echo "Uploading $release to $DEPLOY_FTP_HOST:$DEPLOY_FTP_PATH"
 cd "$release"
+
+# vendor/ is most of the upload but rarely changes, so it is skipped when the server already has the same contents.
+# The fingerprint covers every file, including the classmap Composer generates for src/, so adding or renaming a class
+# uploads vendor/ again. vendor/.deploy-hash on the server holds the fingerprint of the last complete upload.
+vendor_hash=$(find vendor -type f -print0 | LC_ALL=C sort -z | xargs -0 openssl dgst -sha256 -r | openssl dgst -sha256 -r | cut -d' ' -f1)
+printf '%s\n' "$vendor_hash" >"$work/vendor-hash"
+if echo "get vendor/.deploy-hash -o \"$work/vendor-hash.remote\"" | ftp 2>/dev/null &&
+	[ "$(cat "$work/vendor-hash.remote")" = "$vendor_hash" ]; then
+	echo "vendor/ is unchanged on the server, skipping it"
+	vendor_exclude="--exclude '^vendor/'" vendor_before='' vendor_after=''
+else
+	# The old fingerprint goes first and the new one last, so the next deploy never takes an interrupted upload for a
+	# complete one.
+	vendor_exclude='' vendor_before='rm -f vendor/.deploy-hash' vendor_after="put \"$work/vendor-hash\" -o vendor/.deploy-hash"
+fi
+
+echo "Uploading $release to $DEPLOY_FTP_HOST:$DEPLOY_FTP_PATH"
 # Every file is uploaded under a temporary name and renamed when complete, so no request sees a half-written file.
-# --delete spares the excluded server-owned files: config.php, the contents of var/ and what the host puts into
-# public/. index.html and .htaccess go up last and back to back, because the CSP in .htaccess holds the hashes of
-# the inline code in index.html.
+# --delete spares the excluded files: the server-owned config.php, the contents of var/, what the host puts into the
+# document root (the app root, or public/ on hosts that allow it), and a skipped vendor/. public/index.html and
+# public/.htaccess go up last and back to back, because the CSP in .htaccess holds the hashes of the code in index.html.
 ftp <<EOF
-mirror --reverse --delete --parallel=3 --verbose --exclude '^config\.php\$' --exclude '^var/.' --exclude '^public/\.well-known/' --exclude '^public/\.user\.ini\$' --exclude '^public/index\.html\$' --exclude '^public/\.htaccess\$' . .
+$vendor_before
+mirror --reverse --delete --parallel=3 --verbose $vendor_exclude --exclude '^config\.php\$' --exclude '^var/.' --exclude '^\.well-known/' --exclude '^\.user\.ini\$' --exclude '^public/\.well-known/' --exclude '^public/\.user\.ini\$' --exclude '^public/index\.html\$' --exclude '^public/\.htaccess\$' . .
+$vendor_after
 put public/.htaccess -o public/.htaccess
 put public/index.html -o public/index.html
 put "$work/deploy-token" -o var/deploy-token

@@ -40,9 +40,6 @@ The hosting target is an ordinary shared webspace: PHP, MySQL, Apache with `.hta
 Browser ── GET /, /p/{id}, … ─▶ Apache ─▶ public/index.html        (single-file Svelte app)
 Browser ── fetch /api/* ──────▶ Apache ─▶ public/api/index.php ─▶ Slim (src/)
 ```
-
-`public/.htaccess` is generated from `frontend/htaccess.template`. It handles the HTTPS redirect, passes the Authorization header through, routes `/api/*` to Slim, falls back to `index.html` for SPA routes, and sets the security headers, including a CSP with the SHA-256 hashes of the inline script and style. Local development uses `dev/router.php`, which mirrors these rules and sends the same CSP.
-
 ### Encryption design
 
 - **Poll key:** a random 256-bit AES-GCM key (`crypto.subtle.generateKey`), exported raw and base64url-encoded (43 characters).
@@ -73,6 +70,7 @@ rate_limits (bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)
 ## Repository layout
 
 ```
+.htaccess                   the document root is the app root: rewrites every request into public/
 .github/workflows/ci.yml    CI (PHP 8.3–8.5, frontend) and deploy (main → FTP with TLS)
 .github/scripts/            deploy-ftp.sh: upload over FTP, then migrations via one-time token
 bin/migrate.php             apply migrations; --status lists them
@@ -183,12 +181,13 @@ A change is done when:
 
 The webspace offers FTP only, with no SSH, so there is no shell on the server. A push to `main` runs CI, then the deploy job. The deploy job runs only if the repository variable `DEPLOY_URL` is set. It:
 
-1. runs `composer install --no-dev` and the frontend build
-2. assembles `release/` from `bin/`, `migrations/`, `public/`, `src/`, `vendor/`, `config.example.php` and an empty `var/`
+1. runs `composer install --no-dev` and the frontend build. `COMPOSER_ROOT_VERSION` keeps the commit hash out of `vendor/`, so `vendor/` changes only when its contents do.
+2. assembles `release/` from `.htaccess`, `bin/`, `migrations/`, `public/`, `src/`, `vendor/`, `config.example.php` and an empty `var/`
 3. runs [.github/scripts/deploy-ftp.sh](.github/scripts/deploy-ftp.sh), which:
-   - mirrors `release/` to `DEPLOY_FTP_PATH` with lftp, over FTP with mandatory TLS and a verified certificate. It deletes remote files that are not in the release, except `config.php`, the contents of `var/`, `public/.well-known/` and `public/.user.ini`. Files are uploaded under a temporary name and renamed, and `index.html` and `.htaccess` go up last, back to back, because the CSP holds the hashes of `index.html`.
+   - mirrors `release/` to `DEPLOY_FTP_PATH` with lftp, over FTP with mandatory TLS and a verified certificate. It deletes remote files that are not in the release, except `config.php`, the contents of `var/`, and the host's `.well-known/` and `.user.ini` in the app root and in `public/`. Files are uploaded under a temporary name and renamed, and `public/index.html` and `public/.htaccess` go up last, back to back, because the CSP holds the hashes of `index.html`.
+   - skips `vendor/` when a SHA-256 over all of its files matches `vendor/.deploy-hash` on the server. The script deletes that file before it uploads `vendor/` and writes it again afterwards, so an interrupted upload is redone. The hash includes the classmap that Composer generates for `src/`, so adding or renaming a class uploads `vendor/` again.
    - creates a random one-time token, uploads its SHA-256 hash to `var/deploy-token` and calls `POST DEPLOY_URL/api/deploy/migrate` with it ([docs/api.md](docs/api.md)). The server deletes the file and runs the migrations, and the endpoint answers 404 again until the next deploy.
-4. runs a smoke test against `DEPLOY_URL/api/health` and `DEPLOY_URL/`
+4. runs a smoke test against `DEPLOY_URL/api/health` and `DEPLOY_URL/`, and checks that a file in the app root (`config.example.php`) is not served
 
 There is no atomic switch: files are replaced one by one, and the new code runs against the old schema until the migration call. Keep migrations compatible with that, for example by adding columns instead of renaming them.
 
@@ -207,8 +206,8 @@ Configure this under Settings → Secrets and variables → Actions, at the **re
 
 One-time server setup:
 
-1. Make `DEPLOY_FTP_PATH` a **dedicated** directory, because the deploy deletes everything else in it.
-2. Point the domain's document root to `DEPLOY_FTP_PATH/public`. Nothing outside `public/` may be reachable from the web.
+1. Make `DEPLOY_FTP_PATH` the domain's document root, and a **dedicated** directory: the deploy deletes everything else in it except the host's `.well-known/` and `.user.ini`.
+2. The host doesn't let us point the document root to `public/`, so the root `.htaccess` rewrites every request into `public/`. Nothing outside `public/` may be reachable from the web, and the smoke test checks this. On a host that allows it, point the document root to `DEPLOY_FTP_PATH/public` instead; Apache then ignores the root `.htaccess`.
 3. Create `config.php` locally from `config.example.php` with `prod`, the database credentials and a secret, and upload it to `DEPLOY_FTP_PATH/config.php`.
 4. Make sure the server has HTTPS (hosting panel), PHP ≥ 8.3 with pdo_mysql, and Apache with mod_rewrite and mod_headers. PHP must be able to delete files in `var/`, or the migration call fails with `migration_failed`.
 
