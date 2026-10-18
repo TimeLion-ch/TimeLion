@@ -1,0 +1,117 @@
+/*
+ * Global styles and design tokens. Components use scoped <style> blocks and these variables.
+ * No inline style="" attributes anywhere: the Content-Security-Policy blocks them.
+ */
+
+:root {
+	color-scheme: light dark;
+
+	--color-bg: #fffaf3;
+	--color-surface: #ffffff;
+	--color-surface-soft: #f6ecdf;
+	--color-text: #2b2118;
+	--color-muted: #6b5b4b;
+	--color-border: #e7dccd;
+	--color-primary: #8b5a2b;
+	--color-primary-contrast: #ffffff;
+	--color-focus: #b7791f;
+
+	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--radius: 0.75rem;
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 1rem;
+	--space-4: 1.5rem;
+	--space-5: 2.5rem;
+	--space-6: 4rem;
+	--container: 64rem;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-bg: #16120e;
+		--color-surface: #211b15;
+		--color-surface-soft: #2a2119;
+		--color-text: #f3ebe1;
+		--color-muted: #b8a796;
+		--color-border: #3a3027;
+		--color-primary: #e0b47c;
+		--color-primary-contrast: #16120e;
+		--color-focus: #f0c890;
+	}
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: 1rem;
+	line-height: 1.6;
+}
+
+#app {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+	line-height: 1.2;
+	margin: 0 0 var(--space-3);
+}
+
+p {
+	margin: 0 0 var(--space-3);
+}
+
+a {
+	color: var(--color-primary);
+}
+
+:focus-visible {
+	outline: 3px solid var(--color-focus);
+	outline-offset: 2px;
+}
+
+.container {
+	width: 100%;
+	max-width: var(--container);
+	margin-inline: auto;
+	padding-inline: var(--space-3);
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+	}
+}

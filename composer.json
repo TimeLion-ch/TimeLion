@@ -1,0 +1,67 @@
+{
+	"name": "timelion-ch/timelion",
+	"description": "Privacy-focused, end-to-end encrypted meeting scheduling.",
+	"type": "project",
+	"license": "GPL-3.0-only",
+	"homepage": "https://timelion.ch",
+	"require": {
+		"php": ">=8.3",
+		"ext-json": "*",
+		"ext-pdo": "*",
+		"php-di/php-di": "^7.1",
+		"slim/psr7": "^1.8",
+		"slim/slim": "^4.15"
+	},
+	"require-dev": {
+		"ext-pdo_sqlite": "*",
+		"friendsofphp/php-cs-fixer": "^3.95",
+		"phpstan/phpstan": "^2.3",
+		"phpunit/phpunit": "^12.5"
+	},
+	"suggest": {
+		"ext-pdo_mysql": "To use MySQL/MariaDB as database (production)",
+		"ext-pdo_sqlite": "To use SQLite as database (development, small installations)"
+	},
+	"autoload": {
+		"psr-4": {
+			"TimeLion\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"TimeLion\\Tests\\": "tests/"
+		}
+	},
+	"config": {
+		"platform": {
+			"php": "8.3.0"
+		},
+		"optimize-autoloader": true,
+		"sort-packages": true
+	},
+	"scripts": {
+		"serve": [
+			"Composer\\Config::disableProcessTimeout",
+			"@php -S localhost:8000 -t public dev/router.php"
+		],
+		"migrate": "@php bin/migrate.php",
+		"test": "phpunit",
+		"stan": "phpstan analyse --no-progress --memory-limit=512M",
+		"cs": "php-cs-fixer check --diff",
+		"cs:fix": "php-cs-fixer fix",
+		"check": [
+			"@cs",
+			"@stan",
+			"@test"
+		]
+	},
+	"scripts-descriptions": {
+		"serve": "Run the API and the built frontend on http://localhost:8000",
+		"migrate": "Apply pending database migrations",
+		"test": "Run PHPUnit",
+		"stan": "Run PHPStan",
+		"cs": "Check code style",
+		"cs:fix": "Fix code style",
+		"check": "Run all backend checks (style, static analysis, tests)"
+	}
+}

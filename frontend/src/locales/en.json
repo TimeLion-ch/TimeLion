@@ -1,0 +1,23 @@
+{
+	"app.name": "TimeLion",
+	"nav.home": "Home",
+	"nav.main": "Main navigation",
+	"language.label": "Language",
+	"language.de": "Deutsch",
+	"language.en": "English",
+	"home.title": "Find a date together – without giving away your data",
+	"home.lead": "TimeLion is a simple, open-source tool for scheduling polls. Polls are encrypted in your browser: the server never learns what they are about or who voted.",
+	"home.comingSoon": "TimeLion is being rebuilt. Creating polls will be possible again soon.",
+	"home.features.title": "What makes TimeLion different",
+	"home.feature.encrypted.title": "End-to-end encrypted",
+	"home.feature.encrypted.text": "The key lives in the link and never leaves your browser.",
+	"home.feature.noAccount.title": "No account, no cookies",
+	"home.feature.noAccount.text": "No sign-up, no tracking, no ads, no third parties.",
+	"home.feature.expiry.title": "Deletes itself",
+	"home.feature.expiry.text": "Every poll has an expiry date and is permanently deleted afterwards.",
+	"notFound.title": "Page not found",
+	"notFound.text": "This page does not exist. Check the link or go back to the start page.",
+	"notFound.back": "Back to the start page",
+	"footer.copyright": "© {year} TimeLion",
+	"footer.source": "Source code"
+}

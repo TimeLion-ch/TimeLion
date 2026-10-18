@@ -1,0 +1,23 @@
+{
+	"app.name": "TimeLion",
+	"nav.home": "Home",
+	"nav.main": "Hauptnavigation",
+	"language.label": "Sprache",
+	"language.de": "Deutsch",
+	"language.en": "English",
+	"home.title": "Gemeinsam einen Termin finden – ohne Daten preiszugeben",
+	"home.lead": "TimeLion ist ein einfaches, quelloffenes Werkzeug für Terminumfragen. Umfragen werden in deinem Browser verschlüsselt: Der Server sieht nie, worum es geht oder wer abgestimmt hat.",
+	"home.comingSoon": "TimeLion wird gerade neu gebaut. Umfragen erstellen ist bald wieder möglich.",
+	"home.features.title": "Was TimeLion anders macht",
+	"home.feature.encrypted.title": "Ende-zu-Ende-verschlüsselt",
+	"home.feature.encrypted.text": "Der Schlüssel steckt im Link und verlässt deinen Browser nie.",
+	"home.feature.noAccount.title": "Kein Konto, keine Cookies",
+	"home.feature.noAccount.text": "Keine Registrierung, kein Tracking, keine Werbung, keine Drittanbieter.",
+	"home.feature.expiry.title": "Löscht sich selbst",
+	"home.feature.expiry.text": "Jede Umfrage hat ein Ablaufdatum und wird danach endgültig gelöscht.",
+	"notFound.title": "Seite nicht gefunden",
+	"notFound.text": "Diese Seite gibt es nicht. Prüfe den Link oder kehre zur Startseite zurück.",
+	"notFound.back": "Zur Startseite",
+	"footer.copyright": "© {year} TimeLion",
+	"footer.source": "Quellcode"
+}

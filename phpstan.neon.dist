@@ -1,0 +1,10 @@
+parameters:
+	level: max
+	paths:
+		- bin
+		- dev
+		- public
+		- src
+		- tests
+		- config.example.php
+	tmpDir: var/cache/phpstan

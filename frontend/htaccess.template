@@ -1,0 +1,53 @@
+# GENERATED from frontend/htaccess.template by frontend/scripts/build-public.mjs.
+# Do not edit public/.htaccess directly – change the template and rebuild.
+
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_negotiation.c>
+	Options -MultiViews
+</IfModule>
+
+# public/api/ is a directory: without this, /api would be redirected to /api/ (over plain http on some hosts).
+<IfModule mod_dir.c>
+	DirectorySlash Off
+</IfModule>
+
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+
+	# HTTPS only: the encryption key in the link fragment is only safe if the page itself is not tampered with.
+	RewriteCond %{HTTPS} !=on
+	RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+	RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+	# CGI/FastCGI setups drop the Authorization header; hand it to PHP (arrives as REDIRECT_HTTP_AUTHORIZATION).
+	RewriteCond %{HTTP:Authorization} .+
+	RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+	# API → Slim front controller
+	RewriteRule ^api/index\.php$ - [L]
+	RewriteRule ^api(/.*)?$ api/index.php [L,QSA]
+
+	# Existing files are served directly, everything else is a route of the single-page app.
+	RewriteRule ^index\.html$ - [L]
+	RewriteCond %{REQUEST_FILENAME} -f
+	RewriteRule ^ - [L]
+	RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+	Header always set Content-Security-Policy "default-src 'none'; script-src {{CSP_SCRIPT_SRC}}; style-src {{CSP_STYLE_SRC}}; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+	Header always set Referrer-Policy "no-referrer"
+	Header always set X-Content-Type-Options "nosniff"
+	Header always set X-Frame-Options "DENY"
+	Header always set Cross-Origin-Opener-Policy "same-origin"
+	Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()"
+	Header always set Strict-Transport-Security "max-age=31536000"
+	Header always unset X-Powered-By
+	Header unset X-Powered-By
+
+	<Files "index.html">
+		Header set Cache-Control "no-cache"
+	</Files>
+</IfModule>
