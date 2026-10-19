@@ -28,8 +28,10 @@ If a task grows beyond roughly 400 changed lines (not counting tests and lock fi
 | D5  | German copy uses Swiss spelling (ss) and the informal "du"; German is the default language                                              | 2026-10-18 |
 | D6  | The webspace offers FTP only, so the deploy uses FTP with mandatory TLS (lftp) and runs migrations via a one-time-token endpoint. Replaces "rsync over SSH" in D1 | 2026-10-18 |
 | D7  | The maximum poll lifetime (`MAX_LIFETIME`) is 365 days: `expiresAt` may be at most 365 days after the request that sets it        | 2026-10-19 |
+| D8  | Security contact: GitHub private vulnerability reporting, in `security.txt` and `SECURITY.md`; no e-mail address is published         | 2026-10-19 |
+| D9  | License: AGPL-3.0-only instead of GPL-3.0-only, so that whoever runs a modified public instance must publish their changes           | 2026-10-19 |
 
-Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), security contact (4.3), license (4.5), notifications (6.6).
+Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), notifications (6.6).
 
 ## Phase 0: Foundation ✅
 
@@ -204,23 +206,34 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 
 ## Phase 4: Privacy, legal, quality
 
-- [ ] **4.1 End-to-end tests**
+- [x] **4.1 End-to-end tests** — done 2026-10-19
   - Playwright against `composer serve` with the built frontend, covering create → vote → edit → admin close → final option → delete. It also asserts that no request leaves the origin and that the console shows no CSP violations.
   - Run it as its own CI job.
+  - Next: `npm --prefix frontend run e2e` builds, then runs Chromium against `php -S` (dev/router.php) on :8123 with a fresh `var/e2e.sqlite`. Tests use `test` from `e2e/fixtures.ts`: its guard fails on CSP violations, uncaught errors and requests to other origins, and `newPage()` opens a second browser. The poll test also checks that no request carries the key or any plaintext. The deploy waits for the job.
 - [ ] **4.2 Legal pages** 🧭 operator name, address, contact e-mail, hosting provider
   - Routes `/privacy` and `/imprint`, linked in the footer as in the old site ("Impressum", "Kontakt").
   - The privacy policy lists what is stored (ciphertext plus the metadata from CLAUDE.md) and the host's access logs and their retention. The wording should fit the Swiss nFADP and be available in German and English.
-- [ ] **4.3 security.txt** 🧭 security contact
+  - From 4.4: it also says that the browser keeps the links, with the key and any admin token, in its history (which browsers may sync) and that "My polls" keeps them in this browser's storage.
+- [x] **4.3 security.txt** — done 2026-10-19 (D8: GitHub private vulnerability reporting)
   - Add `public/.well-known/security.txt` (RFC 9116). The deploy currently excludes `public/.well-known/` from the upload (`.github/scripts/deploy-ftp.sh`). Decide whether this file is deployed from the repository, and adjust the exclude if so.
-- [ ] **4.4 Security review**
+  - Next: the file is deployed from the repository (the only file of `public/.well-known/` that is); the smoke test fetches it. Its `Expires` is renewed by hand, and `tests/SecurityTxtTest.php` fails 30 days before it passes. `SECURITY.md` is its policy. Private vulnerability reporting must be on in the GitHub repository settings (Security → Private vulnerability reporting).
+- [x] **4.4 Security review** — done 2026-10-19
   - Checklist: XSS (no `{@html}`, user URLs rendered as text), token handling, CSP still hash-only, headers on every response type, size and rate limits, error messages, and dependency audits (`composer audit`, `npm audit --omit=dev` in CI).
   - Done when: findings are fixed or added as tasks.
-- [ ] **4.5 License** 🧭 keep GPL-3.0 or switch to AGPL-3.0
+  - Fixed: `npm audit --omit=dev` checked nothing, because `svelte`, whose runtime is bundled, was a dev dependency; it is in `dependencies` now and CI audits it. Poll texts could put control characters into the `.ics` file; `escapeText` drops them. The dev router sent only three of the page headers, so local runs and the end-to-end tests saw fewer than Apache sends; it now sends all of them from `public/.htaccess`. `shivammathur/setup-php`, the only third-party action and one that runs in the deploy job, is pinned to a commit. Two regexes got the `D` modifier for consistency (neither was exploitable).
+  - New regression tests: the CSP template stays hash-only (Vitest), every kind of API response carries the API headers (PHPUnit), and the page carries its headers (Playwright).
+  - Checked without findings: there are no HTML sinks, and poll texts (URLs included) render as text; the only dynamic link comes from validated device-store IDs and keys. Tokens travel only in the `Authorization` header, are stored as hashes and compared with `hash_equals`. The API sends no CORS headers and uses no cookies. Every write is rate-limited and size-checked before parsing. Error messages carry no request data.
+  - Added as tasks: the browser history note in 4.2. IPv6 rate limits were already in the Inbox.
+- [x] **4.5 License** — done 2026-10-19 (D9: AGPL-3.0)
   - AGPL also requires anyone running a modified public instance to publish their changes, which fits a hosted privacy tool. Update LICENSE, `composer.json`, `frontend/package.json` and the README to match.
-- [ ] **4.6 Logo license**
+  - Next: LICENSE is the text from gnu.org. The footer's "Source code" link is how timelion.ch offers the source (section 13); the README tells self-hosters to point it to their version.
+- [x] **4.6 Logo license** — done 2026-10-19
   - The lion SVG comes from SVG Repo. Check its license, then add attribution or replace it.
-- [ ] **4.7 Brand font (optional)**
+  - Result: it is ["Lion"](https://www.svgrepo.com/svg/484717/lion) (collection "SVG Vector", uploaded by SVG Repo), CC0 per its page (checked in the archived copy of 2025-07-11, as the live page blocks scripts). No attribution is needed; the source is noted in `Logo.svelte` and the README anyway. The favicon and `docs/logo_sm.png` are the same lion.
+  - Next: CC0 means anyone may use this lion too, so it can't become an exclusive trademark, and the CC0 label rests on SVG Repo's word alone. If TimeLion ever needs a protectable mark, commission its own logo.
+- [x] **4.7 Brand font (optional)** — done 2026-10-19
   - The old site used Plus Jakarta Sans (OFL) from Google Fonts. If it's wanted, embed a Latin-subset WOFF2 as a data URI (which needs `font-src data:` in the CSP). Budget: at most 40 KiB.
+  - Next: a variable subset (weights 400–800, Google's "latin" range, `tnum` for the tables) of 19 KiB adds 25 KiB to `index.html`. `src/assets/fonts/README.md` has the source and the commands. An end-to-end test checks that it loads under the CSP.
 
 ## Phase 5: Deployment hardening
 

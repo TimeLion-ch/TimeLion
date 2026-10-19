@@ -2,7 +2,7 @@
 
 TimeLion ([timelion.ch](https://timelion.ch)) is a privacy-focused meeting scheduler. Someone creates a poll with date and time options and shares the link. Participants answer yes, maybe or no for each option, and the group picks a date. Polls are **end-to-end encrypted in the browser**, so the server only ever stores ciphertext.
 
-**Status:** the API, the frontend logic and the UI are done (roadmap Phases 0–3): polls can be created, answered, edited, closed and deleted. Further work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
+**Status:** the API, the frontend logic and the UI are done (roadmap Phases 0–3): polls can be created, answered, edited, closed and deleted. Of Phase 4, everything but the legal pages (4.2) is done: end-to-end tests, security.txt, the security review, the AGPL license, the logo license and the brand font. Further work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
 
 ## Stack
 
@@ -14,7 +14,7 @@ TimeLion ([timelion.ch](https://timelion.ch)) is a privacy-focused meeting sched
 | Frontend      | Svelte 5 (runes), TypeScript, Vite 8, vite-plugin-singlefile                   | builds **one** self-contained `public/index.html`        |
 | Crypto        | WebCrypto, AES-GCM 256                                                         | no crypto libraries                                      |
 | Dates         | `Intl.DateTimeFormat`                                                          | no date libraries                                        |
-| Quality       | PHPUnit 12, PHPStan level max, PHP-CS-Fixer (PER-CS, tabs); Vitest, svelte-check, tsc, Prettier |                                         |
+| Quality       | PHPUnit 12, PHPStan level max, PHP-CS-Fixer (PER-CS, tabs); Vitest, svelte-check, tsc, Prettier; Playwright (end-to-end) |                |
 | CI/CD         | GitHub Actions; deploys over FTP with TLS (lftp) to a shared webspace          | `.github/workflows/ci.yml`                               |
 
 The hosting target is an ordinary shared webspace: PHP, MySQL, Apache with `.htaccess`, and FTP. There is no SSH or shell, no Node on the server, no long-running processes and no root access. Anything that needs more than that is out of scope. Cron may be missing too, so expired data is purged after about 2% of API requests (`PurgeMiddleware`); where the host offers cron, `php bin/purge.php` can run as well, but nothing depends on it.
@@ -29,7 +29,7 @@ The hosting target is an ordinary shared webspace: PHP, MySQL, Apache with `.hta
 6. **Tokens:** store only SHA-256 hashes and compare them with `hash_equals`. Tokens travel in the `Authorization: Bearer` header, never in URLs.
 7. **Decrypted data is untrusted.** Anyone with the link can write anything. Validate its shape after decrypting, render it as text, and never use `{@html}` with user data.
 8. **Every poll expires.** Expired data is deleted, not hidden.
-9. **Keep dependencies minimal.** Ask before adding a runtime dependency (a PHP `require` or anything bundled into the frontend). Dev tools are fine when justified.
+9. **Keep dependencies minimal.** Ask before adding a runtime dependency (a PHP `require` or anything bundled into the frontend, which goes into `dependencies` in `frontend/package.json`). Dev tools are fine when justified. CI audits the runtime dependencies (`composer audit --no-dev`, `npm audit --omit=dev`).
 10. **Keep UI copy honest.** Never claim features or guarantees that don't exist.
 
 ## Architecture
@@ -71,17 +71,20 @@ rate_limits (bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)
 
 ```
 .htaccess                   the document root is the app root: rewrites every request into public/
-.github/workflows/ci.yml    CI (PHP 8.3–8.5 on SQLite, PHP 8.3 on MariaDB, frontend) and deploy (main → FTP with TLS)
+.github/workflows/ci.yml    CI (PHP 8.3–8.5 on SQLite, PHP 8.3 on MariaDB, frontend, end-to-end) and deploy (main → FTP with TLS)
 .github/scripts/            deploy-ftp.sh: upload over FTP, then migrations via one-time token
+SECURITY.md                 how to report vulnerabilities (GitHub private reporting), scope
 bin/migrate.php             apply migrations; --status lists them
 bin/purge.php               delete expired data (optional cron job; requests also purge, see Maintenance/)
 config.example.php          template for config.php (gitignored, lives only on the server)
 dev/router.php              router for `php -S`; mirrors .htaccess, including the CSP
 docs/api.md                 API reference: update it with every endpoint change
 frontend/
+  e2e/                      Playwright end-to-end tests; fixtures.ts (the guard), server.mjs + config.php (test server)
   htaccess.template         → public/.htaccess (CSP placeholders filled at build time)
   scripts/build-public.mjs  copies dist/index.html to public/, computes the CSP hashes (logic in csp.mjs)
   src/App.svelte            route switch
+  src/assets/               favicon; fonts/ (Plus Jakarta Sans subset, OFL, how it was made)
   src/components/           UI components: building blocks (Button, TextField, Notice, ConfirmButton, CopyField,
                             Calendar) and the parts of the pages (PollForm, ResultsTable, VotePanel, AdminPanel, …)
   src/routes/               one component per page: Home, CreatePoll, PollPage, MyPolls, NotFound
@@ -93,6 +96,7 @@ migrations/                 NNNN_description.sql
 public/                     web root on the server
   api/index.php             Slim front controller
   index.html, .htaccess     GENERATED by the frontend build (gitignored)
+  .well-known/security.txt  security contact (RFC 9116); renew Expires yearly (tests/SecurityTxtTest.php)
   robots.txt
 src/                        PHP, namespace TimeLion\
   Kernel.php                builds the container (also for bin/) and the Slim app: middleware, error handling
@@ -130,6 +134,7 @@ npm --prefix frontend run build
 | `composer check`                         | PHP code style, PHPStan and PHPUnit                                           |
 | `composer cs:fix`                        | Fix PHP code style                                                            |
 | `npm --prefix frontend run verify`       | Prettier check, svelte-check + tsc, Vitest, build                             |
+| `npm --prefix frontend run e2e`          | Build, then Playwright on :8123 with a fresh SQLite database (`var/e2e.sqlite`); once before: `npx --prefix frontend playwright install chromium` |
 | `npm --prefix frontend run format`       | Format the frontend code                                                      |
 | `php bin/migrate.php [--status]`         | Apply or list migrations                                                      |
 | `php bin/purge.php`                      | Delete expired polls now (optional cron job, e.g. hourly)                     |
@@ -155,10 +160,11 @@ npm --prefix frontend run build
 - **Never use `#` anchors** for jumping within a page: the fragment holds the key. `router.hash` is reactive, and `App.svelte` re-creates the poll page for every ID and fragment. Per-entry UI state that must survive a reload (the share screen after creating a poll) goes into history state (`navigate(path, { state })`, `router.state`).
 - Forms edit a draft (`pollDraft.ts`, `responseDraft.ts`) that the lib turns into a document; validation errors show after the first submit and then follow every change. Irreversible actions go through `ConfirmButton`. Dates are `YYYY-MM-DD` strings with UTC arithmetic (`dates.ts`); option times are wall-clock times in the poll's timezone, formatted with `format.ts`.
 - All UI text goes through `t('key')` from `i18n.svelte.ts`. Add each key to every file in `src/locales/`; a test enforces identical keys and placeholders. German copy uses Swiss spelling (ss, never ß) and the informal "du".
-- **CSS:** global tokens live in `src/app.css`; components use scoped `<style>` blocks. **No `style="…"` attributes in markup**, because the hash-based CSP blocks them. Use classes, or `style:` directives where something must be dynamic. SVG colours use presentation attributes (`fill="…"`). The colour tokens meet WCAG AA in both themes (text 4.5:1, focus ring and control borders 3:1); keep it that way. The layout must work at 360 px; text from polls gets `overflow-wrap: anywhere`. Absolutely positioned content (such as `.visually-hidden`) inside a scroll box needs a positioned ancestor, or it widens the page.
+- **CSS:** global tokens live in `src/app.css`; components use scoped `<style>` blocks. **No `style="…"` attributes in markup**, because the hash-based CSP blocks them. Use classes, or `style:` directives where something must be dynamic. SVG colours use presentation attributes (`fill="…"`). The colour tokens meet WCAG AA in both themes (text 4.5:1, focus ring and control borders 3:1); keep it that way. The font is Plus Jakarta Sans, a Latin subset with weights 400–800 that the build inlines as a `data:` URI (`font-src data:` in the CSP); `src/assets/fonts/README.md` says how to rebuild it, and it stays under 40 KiB. The layout must work at 360 px; text from polls gets `overflow-wrap: anywhere`. Absolutely positioned content (such as `.visually-hidden`) inside a scroll box needs a positioned ancestor, or it widens the page.
 - API calls go only through `src/lib/api.ts`; pass tokens with the `token` option. localStorage goes only through `src/lib/storage.ts`, which never throws. Treat everything stored there as optional.
 - Components handle poll data through `src/lib/polls.ts`, which encrypts before sending and validates after decrypting (`model.ts`), not through `crypto.ts` or the poll endpoints of `api.ts`. Links are built and parsed in `links.ts`; the polls saved in this browser (keys and tokens) go through `deviceStore.ts`.
 - Prettier formats everything (tabs, single quotes, 120-character lines).
+- End-to-end tests (`e2e/*.spec.ts`) import `test` and `expect` from `e2e/fixtures.ts`. Its guard fails a test on a CSP violation, an uncaught error or a request to another origin (which it also blocks); `newPage()` opens another person's browser with its own storage. Use roles and labels from `en.json` as selectors (the tests run in `en-GB`).
 
 ## Database conventions
 
@@ -188,9 +194,9 @@ All requests go under `/api`, with JSON in and out; request bodies need `Content
 A change is done when:
 
 1. `composer check` and `npm --prefix frontend run verify` pass.
-2. New behaviour has tests: PHPUnit HTTP tests for endpoints, Vitest for TypeScript logic.
+2. New behaviour has tests: PHPUnit HTTP tests for endpoints, Vitest for TypeScript logic, and Playwright (`frontend/e2e/`) for new user flows.
 3. The docs are updated: `docs/api.md` for API changes, this file when conventions or architecture change, and the checkbox in `roadmap.md`.
-4. For UI changes: you built the frontend, used it via `composer serve`, and the browser console shows **no CSP violations**. Headless check on macOS (no output means no violation):
+4. For UI changes: `npm --prefix frontend run e2e` passes (it fails on **CSP violations** and requests to other origins), and you used the change via `composer serve`. For a page the end-to-end tests don't open, check the console yourself; headless on macOS (no output means no violation):
 
    ```bash
    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --enable-logging=stderr --v=0 \
@@ -204,10 +210,10 @@ The webspace offers FTP only, with no SSH, so there is no shell on the server. A
 1. runs `composer install --no-dev` and the frontend build. `COMPOSER_ROOT_VERSION` keeps the commit hash out of `vendor/`, so `vendor/` changes only when its contents do.
 2. assembles `release/` from `.htaccess`, `bin/`, `migrations/`, `public/`, `src/`, `vendor/`, `config.example.php` and an empty `var/`
 3. runs [.github/scripts/deploy-ftp.sh](.github/scripts/deploy-ftp.sh), which:
-   - mirrors `release/` to `DEPLOY_FTP_PATH` with lftp, over FTP with mandatory TLS and a verified certificate. It deletes remote files that are not in the release, except `config.php`, the contents of `var/`, and the host's `.well-known/` and `.user.ini` in the app root and in `public/`. Files are uploaded under a temporary name and renamed, and `public/index.html` and `public/.htaccess` go up last, back to back, because the CSP holds the hashes of `index.html`.
+   - mirrors `release/` to `DEPLOY_FTP_PATH` with lftp, over FTP with mandatory TLS and a verified certificate. It deletes remote files that are not in the release, except `config.php`, the contents of `var/`, and the host's `.well-known/` and `.user.ini` in the app root and in `public/`. Of `public/.well-known/`, only `security.txt` comes from the release. Files are uploaded under a temporary name and renamed, and `public/index.html` and `public/.htaccess` go up last, back to back, because the CSP holds the hashes of `index.html`.
    - skips `vendor/` when a SHA-256 over all of its files matches `vendor/.deploy-hash` on the server. The script deletes that file before it uploads `vendor/` and writes it again afterwards, so an interrupted upload is redone. The hash includes the classmap that Composer generates for `src/`, so adding or renaming a class uploads `vendor/` again.
    - creates a random one-time token, uploads its SHA-256 hash to `var/deploy-token` and calls `POST DEPLOY_URL/api/deploy/migrate` with it ([docs/api.md](docs/api.md)). The server deletes the file and runs the migrations, and the endpoint answers 404 again until the next deploy.
-4. runs a smoke test against `DEPLOY_URL/api/health` and `DEPLOY_URL/`, and checks that a file in the app root (`config.example.php`) is not served
+4. runs a smoke test against `DEPLOY_URL/api/health` and `DEPLOY_URL/`, checks that a file in the app root (`config.example.php`) is not served, and that `/.well-known/security.txt` is served as UTF-8 text
 
 There is no atomic switch: files are replaced one by one, and the new code runs against the old schema until the migration call. Keep migrations compatible with that, for example by adding columns instead of renaming them.
 
@@ -233,6 +239,8 @@ One-time server setup:
 5. Set `display_errors` to off in the host's PHP settings (hosting panel or `.user.ini`). `public/api/index.php` switches it off as well, but PHP prints warnings from before that line, e.g. for a POST larger than `post_max_size`, into the response, as HTML with server paths.
 
 **Pushing to `main` deploys to production.** Work on branches and merge through pull requests.
+
+Third-party actions in `ci.yml` (only `shivammathur/setup-php` so far) are pinned to a commit, with the release as a comment, so a moved tag can't change what runs next to the deploy secrets. Update them deliberately.
 
 ## Rules for agents
 

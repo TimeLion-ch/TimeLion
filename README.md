@@ -4,7 +4,7 @@
 
 TimeLion is a simple, open-source, privacy-focused meeting scheduler. It is **end-to-end encrypted**: polls are encrypted in your browser, and the server only ever stores ciphertext. Use it for free on [timelion.ch](https://timelion.ch) or host it yourself.
 
-> **Status:** being rebuilt. Polls can be created, answered and managed again; legal pages, end-to-end tests and a security review come next (see the [roadmap](roadmap.md)).
+> **Status:** being rebuilt. Polls can be created, answered and managed again, end-to-end tests run in CI, and a security review is done; the legal pages and the first production deploy come next (see the [roadmap](roadmap.md)).
 
 ## How it works
 
@@ -36,6 +36,8 @@ Expired polls are deleted automatically after about 2% of API requests. If your 
 php bin/purge.php
 ```
 
+`public/.well-known/security.txt` names the TimeLion project as the security contact. On your own instance, replace it with your contact, or delete it.
+
 Point the document root at `public/` if your host allows it. If the document root has to stay the app root, the `.htaccess` there rewrites every request into `public/`. Either way, nothing outside `public/` may be reachable from the web.
 
 Automated deployment with GitHub Actions (FTP with TLS, for webspaces without SSH) is described in [CLAUDE.md → Deployment](CLAUDE.md#deployment).
@@ -53,10 +55,12 @@ composer serve                      # http://localhost:8000
 
 For frontend work with hot reload, run `npm --prefix frontend run dev` (http://localhost:5173) alongside `composer serve`.
 
-Checks: `composer check` (PHP) and `npm --prefix frontend run verify` (frontend).
+Checks: `composer check` (PHP), `npm --prefix frontend run verify` (frontend) and `npm --prefix frontend run e2e` (end-to-end tests with Playwright; install its browser once with `npx --prefix frontend playwright install chromium`).
 
 The architecture, conventions and rules for contributors (human or AI) are in [CLAUDE.md](CLAUDE.md).
 
 ## License
 
-[GPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE). If you run a modified version of TimeLion for others, the AGPL asks you to offer its users the source code of your version (section 13): point the "Source code" link in the footer (`frontend/src/components/SiteFooter.svelte`) to it.
+
+The lion logo is ["Lion" from SVG Repo](https://www.svgrepo.com/svg/484717/lion), released under [CC0](https://www.svgrepo.com/page/licensing/#CC0). The font, [Plus Jakarta Sans](https://github.com/tokotype/PlusJakartaSans), is licensed under the [SIL Open Font License 1.1](frontend/src/assets/fonts/OFL.txt).

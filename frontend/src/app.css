@@ -3,6 +3,15 @@
  * No inline style="" attributes anywhere: the Content-Security-Policy blocks them.
  */
 
+/* A Latin subset (assets/fonts/README.md, OFL), inlined by the build as a data: URI, which the CSP allows. */
+@font-face {
+	font-family: 'Plus Jakarta Sans';
+	font-style: normal;
+	font-weight: 400 800;
+	font-display: swap;
+	src: url('./assets/fonts/plus-jakarta-sans-latin.woff2') format('woff2');
+}
+
 :root {
 	color-scheme: light dark;
 
@@ -24,7 +33,7 @@
 	--color-warning: #8a5a00;
 	--color-warning-soft: #fbefd2;
 
-	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--radius: 0.75rem;
 	--radius-small: 0.5rem;
 	--space-1: 0.25rem;

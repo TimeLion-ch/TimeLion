@@ -16,7 +16,7 @@ use Throwable;
  */
 final class Migrator
 {
-	private const string FILENAME_PATTERN = '/^\d{4}_[a-z0-9_]+\.sql$/';
+	private const string FILENAME_PATTERN = '/^\d{4}_[a-z0-9_]+\.sql$/D';
 
 	public function __construct(
 		private readonly PDO $pdo,

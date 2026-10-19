@@ -2,7 +2,7 @@
 	"name": "timelion-ch/timelion",
 	"description": "Privacy-focused, end-to-end encrypted meeting scheduling.",
 	"type": "project",
-	"license": "GPL-3.0-only",
+	"license": "AGPL-3.0-only",
 	"homepage": "https://timelion.ch",
 	"require": {
 		"php": ">=8.3",

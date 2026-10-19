@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { cspHash, inlineHashes, renderHtaccess } from './csp.mjs';
 
@@ -40,5 +41,31 @@ describe('renderHtaccess', () => {
 		expect(() => renderHtaccess('script-src {{CSP_SCRIPT_SRC}}', { scripts: [cspHash('x')], styles: [] })).toThrow(
 			/CSP_STYLE_SRC/,
 		);
+	});
+});
+
+describe('htaccess.template', () => {
+	// A change to the policy must change this test too: scripts and styles only by hash, nothing from other origins.
+	it('keeps the Content-Security-Policy hash-only and same-origin', async () => {
+		const template = await readFile(new URL('../htaccess.template', import.meta.url), 'utf8');
+		const policy = /Header always set Content-Security-Policy "([^"]+)"/.exec(template)?.[1] ?? '';
+		const directives = Object.fromEntries(
+			policy.split(';').map((directive) => {
+				const [name, ...values] = directive.trim().split(/\s+/);
+				return [name, values];
+			}),
+		);
+
+		expect(directives).toEqual({
+			'default-src': ["'none'"],
+			'script-src': ['{{CSP_SCRIPT_SRC}}'],
+			'style-src': ['{{CSP_STYLE_SRC}}'],
+			'img-src': ["'self'", 'data:'],
+			'font-src': ['data:'],
+			'connect-src': ["'self'"],
+			'base-uri': ["'none'"],
+			'form-action': ["'self'"],
+			'frame-ancestors': ["'none'"],
+		});
 	});
 });

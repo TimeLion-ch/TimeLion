@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
 
+# Third-party actions are pinned to a commit, so a moved tag can't change what runs next to the deploy secrets. Update
+# them deliberately: the commit of a release tag, with its version as a comment.
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -58,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php }}
           extensions: pdo_sqlite, pdo_mysql
@@ -115,12 +118,60 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Only "dependencies" ship in index.html (svelte); dev tools never reach the browser.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
       - name: Format, type check, test and build
         run: npm run verify
 
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --no-progress --prefer-dist
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies and Chromium
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # Builds the frontend, then runs Playwright against PHP's built-in server (frontend/e2e/server.mjs).
+      - name: End-to-end tests
+        working-directory: frontend
+        run: npm run e2e
+
+      - name: Upload the report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+
   deploy:
     name: Deploy
-    needs: [backend, frontend]
+    needs: [backend, frontend, e2e]
     # Repository-level variables only: environment-level variables are not visible in a job's `if`.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_URL != ''
     runs-on: ubuntu-latest
@@ -140,7 +191,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ env.PHP_VERSION }}
           coverage: none
@@ -188,3 +239,7 @@ jobs:
           curl --fail --silent --show-error "${DEPLOY_URL%/}/" | grep -q '<div id="app">'
           # Nothing outside public/ is reachable: a file in the app root gets the single-page app, not its own content.
           curl --fail --silent --show-error "${DEPLOY_URL%/}/config.example.php" | grep -q '<div id="app">'
+          # security.txt (RFC 9116) comes from the release, as UTF-8 text.
+          curl --fail --silent --show-error --dump-header "$RUNNER_TEMP/security-txt-headers" \
+            "${DEPLOY_URL%/}/.well-known/security.txt" | grep -q '^Contact: https://'
+          grep -qi '^content-type: text/plain; *charset=utf-8' "$RUNNER_TEMP/security-txt-headers"
