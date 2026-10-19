@@ -189,5 +189,8 @@
 	"my.forgetAllQuestion": "Alle Umfragen aus diesem Browser entfernen?",
 	"my.forgotten": "Aus diesem Browser entfernt.",
 	"poll.addToCalendar": "Zum Kalender hinzufügen",
-	"poll.addToCalendarHint": "Lädt eine .ics-Datei für deinen Kalender herunter. Sie enthält Titel, Beschreibung und Ort, aber nicht den Link zur Umfrage."
+	"poll.addToCalendarHint": "Lädt eine .ics-Datei für deinen Kalender herunter. Sie enthält Titel, Beschreibung und Ort, aber nicht den Link zur Umfrage.",
+	"vote.personalLink": "Persönlicher Link",
+	"vote.personalLinkNamed": "Persönlicher Link für die Antwort von {name}",
+	"vote.personalHint": "Damit kannst du diese Antwort auch auf einem anderen Gerät ändern oder löschen. Gib ihn nicht weiter."
 }

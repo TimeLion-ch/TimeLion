@@ -189,5 +189,8 @@
 	"my.forgetAllQuestion": "Remove all polls from this browser?",
 	"my.forgotten": "Removed from this browser.",
 	"poll.addToCalendar": "Add to calendar",
-	"poll.addToCalendarHint": "Downloads an .ics file for your calendar. It contains the title, description and location, but not the link to the poll."
+	"poll.addToCalendarHint": "Downloads an .ics file for your calendar. It contains the title, description and location, but not the link to the poll.",
+	"vote.personalLink": "Personal link",
+	"vote.personalLinkNamed": "Personal link for the response of {name}",
+	"vote.personalHint": "With it you can change or delete this response on another device too. Don't pass it on."
 }

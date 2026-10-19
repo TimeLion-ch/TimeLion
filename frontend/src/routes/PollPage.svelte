@@ -52,6 +52,11 @@
 				details.adminToken = fragment.adminToken;
 			}
 			deviceStore.savePoll(id, fragment.key, details);
+			// A personal edit link makes its response this browser's, if the response still exists.
+			const edit = fragment.edit;
+			if (edit !== undefined && loaded.responses.some((entry) => entry.id === edit.responseId)) {
+				deviceStore.saveResponse(id, fragment.key, { id: edit.responseId, editToken: edit.editToken });
+			}
 			own = deviceStore.get(id)?.responses ?? [];
 		} catch (error) {
 			problem = loadProblem(error);
@@ -201,7 +206,15 @@
 		</section>
 
 		{#if loaded.meta.closedAt === null && fragment !== null}
-			<VotePanel {id} pollKey={fragment.key} {poll} responses={loaded.responses} {own} onchange={load} />
+			<VotePanel
+				{id}
+				pollKey={fragment.key}
+				{poll}
+				responses={loaded.responses}
+				{own}
+				onchange={load}
+				initialEdit={fragment.edit?.responseId}
+			/>
 		{/if}
 	</article>
 {/if}

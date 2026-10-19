@@ -198,8 +198,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [x] **3.9 Calendar export** — done 2026-10-19
   - Download the final option as an `.ics` file (generated in the browser as a Blob, RFC 5545, with correct timezones), offered as an "Add to calendar" button on closed polls.
   - Next: `buildIcs` writes times in UTC (no VTIMEZONE needed) and whole days as dates; the file never contains the poll's link. A Blob download needs no CSP change.
-- [ ] **3.10 Personal edit link**
+- [x] **3.10 Personal edit link** — done 2026-10-19
   - After voting, offer a link (`#k=…&r={responseId}.{editToken}`) for editing the response from another device, and handle it on the poll page.
+  - Next: opening a personal link saves its token in the device store (only if the response still exists) and opens the response in the form.
 
 ## Phase 4: Privacy, legal, quality
 
