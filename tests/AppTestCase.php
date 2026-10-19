@@ -163,6 +163,9 @@ abstract class AppTestCase extends TestCase
 	protected static function assertError(int $status, string $code, ResponseInterface $response): string
 	{
 		self::assertSame($status, $response->getStatusCode(), (string) $response->getBody());
+		if ($status === 401) {
+			self::assertSame('Bearer', $response->getHeaderLine('WWW-Authenticate'), 'a 401 needs a challenge');
+		}
 		$error = self::json($response)['error'] ?? null;
 		self::assertIsArray($error);
 		self::assertSame($code, $error['code'] ?? null);

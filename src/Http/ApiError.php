@@ -35,7 +35,8 @@ final class ApiError extends RuntimeException
 
 	public static function unauthorized(string $message = 'Missing or malformed access token.'): self
 	{
-		return new self(401, 'unauthorized', $message);
+		// RFC 9110 requires a challenge with every 401. Browsers only prompt for Basic and similar schemes, not Bearer.
+		return new self(401, 'unauthorized', $message, null, ['WWW-Authenticate' => 'Bearer']);
 	}
 
 	public static function forbidden(string $message = 'The access token is not valid for this resource.'): self

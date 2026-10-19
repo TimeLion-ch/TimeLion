@@ -224,6 +224,7 @@ One-time server setup:
 2. The host doesn't let us point the document root to `public/`, so the root `.htaccess` rewrites every request into `public/`. Nothing outside `public/` may be reachable from the web, and the smoke test checks this. On a host that allows it, point the document root to `DEPLOY_FTP_PATH/public` instead; Apache then ignores the root `.htaccess`.
 3. Create `config.php` locally from `config.example.php` with `prod`, the database credentials and a secret, and upload it to `DEPLOY_FTP_PATH/config.php`.
 4. Make sure the server has HTTPS (hosting panel), PHP ≥ 8.3 with pdo_mysql, and Apache with mod_rewrite and mod_headers. PHP must be able to delete files in `var/`, or the migration call fails with `migration_failed`.
+5. Set `display_errors` to off in the host's PHP settings (hosting panel or `.user.ini`). `public/api/index.php` switches it off as well, but PHP prints warnings from before that line, e.g. for a POST larger than `post_max_size`, into the response, as HTML with server paths.
 
 **Pushing to `main` deploys to production.** Work on branches and merge through pull requests.
 

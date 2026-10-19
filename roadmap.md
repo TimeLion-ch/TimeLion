@@ -110,9 +110,10 @@ Tasks:
   - Over the limit: **429** `too_many_requests` with a `Retry-After` header.
   - Done when: tests cover reaching the limit, the window reset and independent IPs, and assert that the table never contains a raw IP.
   - Next: each write action calls `RateLimiter::hit()` first, so rejected requests count too. `ApiError` can carry headers (`Retry-After`). Response deletes by the admin count as `write_response`.
-- [ ] **1.11 API hardening review**
+- [x] **1.11 API hardening review** — done 2026-10-19
   - For every endpoint, check that limits are enforced, IDs are validated before database access, errors are consistent, no user data reaches the logs, and `docs/api.md` is complete. Add `composer audit --no-dev` to CI.
   - Done when: findings are fixed or added as tasks.
+  - Fixed: bodies were read into memory in full before the size check (a 300 MB body exhausted `memory_limit`), now at most 80 KiB + 1 byte is read; 401 now carries `WWW-Authenticate: Bearer`; `index.php` turns off `display_errors` and call arguments in PHP's own traces; CLAUDE.md asks for `display_errors` off on the host. No other findings; IPv6 rate limits are in the Inbox.
 
 ## Phase 2: Frontend logic (no UI yet)
 

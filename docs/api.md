@@ -6,8 +6,9 @@ This file documents **implemented** endpoints only. Planned endpoints are specif
 
 ## Conventions
 
-- Request bodies must be JSON objects sent with `Content-Type: application/json` (otherwise `415`).
-- Authentication uses capability tokens in the `Authorization: Bearer <token>` header (admin token or edit token). Tokens never appear in URLs.
+- Request bodies must be JSON objects sent with `Content-Type: application/json` (otherwise `415`). The server reads at most 80 KiB: a larger body, or a larger `Content-Length`, gets `413` without being read further.
+- Authentication uses capability tokens in the `Authorization: Bearer <token>` header (admin token or edit token). Tokens never appear in URLs. A `401` carries `WWW-Authenticate: Bearer`.
+- The API sends no CORS headers, so pages on other origins can't read its responses, and browsers won't send them JSON requests (the preflight `OPTIONS` request gets `405`).
 - Timestamps are Unix seconds (integer, UTC).
 - IDs are 32 lowercase hex characters.
 - Every response carries `Cache-Control: no-store` and restrictive security headers.
