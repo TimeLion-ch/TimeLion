@@ -76,7 +76,7 @@ rate_limits (bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)
 SECURITY.md                 how to report vulnerabilities (GitHub private reporting), scope
 bin/migrate.php             apply migrations; --status lists them
 bin/purge.php               delete expired data (optional cron job; requests also purge, see Maintenance/)
-config.example.php          template for config.php (gitignored, lives only on the server), incl. the privacy policy text
+config.example.php          template for config.php (gitignored, lives only on the server)
 dev/router.php              router for `php -S`; mirrors .htaccess, including the CSP
 docs/api.md                 API reference: update it with every endpoint change
 frontend/
@@ -235,7 +235,7 @@ One-time server setup:
 
 1. Make `DEPLOY_FTP_PATH` the domain's document root, and a **dedicated** directory: the deploy deletes everything else in it except the host's `.well-known/` and `.user.ini`.
 2. The host doesn't let us point the document root to `public/`, so the root `.htaccess` rewrites every request into `public/`. Nothing outside `public/` may be reachable from the web, and the smoke test checks this. On a host that allows it, point the document root to `DEPLOY_FTP_PATH/public` instead; Apache then ignores the root `.htaccess`.
-3. Create `config.php` locally from `config.example.php` with `prod`, the database credentials, a secret and the privacy policy (fill in every `[placeholder]`), and upload it to `DEPLOY_FTP_PATH/config.php`. A changed privacy policy only needs this file uploaded again, no deploy.
+3. Create `config.php` locally from `config.example.php` with `prod`, the database credentials, a secret and the privacy policy's text (`privacy_policy`, format in `frontend/src/lib/markup.ts`), and upload it to `DEPLOY_FTP_PATH/config.php`. A changed privacy policy only needs this file uploaded again, no deploy.
 4. Make sure the server has HTTPS (hosting panel), PHP ≥ 8.3 with pdo_mysql, and Apache with mod_rewrite and mod_headers. PHP must be able to delete files in `var/`, or the migration call fails with `migration_failed`.
 5. Set `display_errors` to off in the host's PHP settings (hosting panel or `.user.ini`). `public/api/index.php` switches it off as well, but PHP prints warnings from before that line, e.g. for a POST larger than `post_max_size`, into the response, as HTML with server paths.
 
