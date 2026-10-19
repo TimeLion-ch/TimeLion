@@ -57,7 +57,7 @@ Browser ── fetch /api/* ──────▶ Apache ─▶ public/api/index
   - A compromised server could ship malicious JavaScript that leaks keys. The strict CSP, open source code and (later) reproducible builds reduce this risk but cannot remove it.
   - Losing the link means losing the poll. There is no recovery, by design.
 
-### Data model (planned, see roadmap 1.1 and 1.10)
+### Data model (polls and responses: `migrations/0001`; rate_limits: planned, roadmap 1.10)
 
 ```
 polls       (id CHAR(32) PK, admin_token_hash CHAR(64), ciphertext MEDIUMTEXT,

@@ -27,8 +27,9 @@ If a task grows beyond roughly 400 changed lines (not counting tests and lock fi
 | D4  | IDs are 128-bit random lowercase hex (32 chars); tokens are 256-bit random base64url (43 chars); the server stores SHA-256 hashes of tokens | 2026-10-18 |
 | D5  | German copy uses Swiss spelling (ss) and the informal "du"; German is the default language                                              | 2026-10-18 |
 | D6  | The webspace offers FTP only, so the deploy uses FTP with mandatory TLS (lftp) and runs migrations via a one-time-token endpoint. Replaces "rsync over SSH" in D1 | 2026-10-18 |
+| D7  | The maximum poll lifetime (`MAX_LIFETIME`) is 365 days: `expiresAt` may be at most 365 days after the request that sets it        | 2026-10-19 |
 
-Decisions still open are marked 🧭 on the tasks that need them: maximum poll lifetime (1.1), legal page details (4.2), security contact (4.3), license (4.5), notifications (6.6).
+Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), security contact (4.3), license (4.5), notifications (6.6).
 
 ## Phase 0: Foundation ✅
 
@@ -41,7 +42,7 @@ Decisions still open are marked 🧭 on the tasks that need them: maximum poll l
 
 **The API contract for this phase.** Implement it exactly, and copy each endpoint into `docs/api.md` when it lands.
 
-- **Limits:** poll ciphertext ≤ 64 KiB; response ciphertext ≤ 16 KiB; request body ≤ 80 KiB; at most 500 responses per poll; `expiresAt` must be later than now and at most `MAX_LIFETIME` from now (see 1.1).
+- **Limits:** poll ciphertext ≤ 64 KiB; response ciphertext ≤ 16 KiB; request body ≤ 80 KiB; at most 500 responses per poll; `expiresAt` must be later than now and at most `MAX_LIFETIME` (365 days, D7) from now.
 - **Ciphertext format** (the server checks it but never decrypts): `^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{24,}$`
 - **ID format** (check it before any database access): `^[0-9a-f]{32}$`. Malformed IDs return `404 not_found`, the same as unknown or expired ones.
 
@@ -52,10 +53,11 @@ Tasks:
   - Add a MariaDB service container (`mariadb:11`) to the `backend` job, as one extra matrix entry rather than for every PHP version.
   - Done when: CI runs the suite on SQLite and MariaDB and both pass.
   - Next: `AppTestCase` puts a migrated `TestDatabase` connection into the container (`$this->pdo`); repository tests use `TestDatabase::migrated()`.
-- [ ] **1.1 Schema: polls and responses** 🧭 confirm the maximum poll lifetime (proposal: 180 days)
+- [x] **1.1 Schema: polls and responses** — done 2026-10-19 (D7: 365 days)
   - Add `migrations/0001_create_polls_and_responses.sql` with the tables from CLAUDE.md → Data model, an index on `polls(expires_at)`, an index on `responses(poll_id)`, and the foreign key with `ON DELETE CASCADE`.
   - Add a `TimeLion\Polls\Limits` class (or similar) holding the contract limits above as constants, including `MAX_LIFETIME`.
   - Done when: the migration applies on SQLite and MariaDB (1.0), and a test proves the cascade delete.
+  - Next: the limits are constants on `TimeLion\Polls\Limits`; `MAX_LIFETIME` is in seconds.
 - [ ] **1.2 Security primitives**
   - `src/Security/Random.php`: `id()` returns 32 lowercase hex characters; `token()` returns 43 base64url characters (32 bytes).
   - `src/Security/TokenHash.php`: `hash(string $token)` returns the SHA-256 hex digest; `matches(string $token, string $hash)` compares with `hash_equals`.
