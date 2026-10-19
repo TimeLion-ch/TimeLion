@@ -5,6 +5,7 @@
 	import CreatePoll from './routes/CreatePoll.svelte';
 	import Home from './routes/Home.svelte';
 	import NotFound from './routes/NotFound.svelte';
+	import PollPage from './routes/PollPage.svelte';
 </script>
 
 <SiteHeader />
@@ -14,6 +15,10 @@
 		<Home />
 	{:else if router.route.name === 'new'}
 		<CreatePoll />
+	{:else if router.route.name === 'poll'}
+		{#key router.route.id}
+			<PollPage id={router.route.id} />
+		{/key}
 	{:else}
 		<NotFound />
 	{/if}

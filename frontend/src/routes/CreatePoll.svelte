@@ -24,7 +24,7 @@
 			const created = await createPoll(poll, expiresAt(submitted, Math.floor(Date.now() / 1000)));
 			deviceStore.savePoll(created.id, created.key, { adminToken: created.adminToken, title: poll.title });
 			const url = new URL(adminLink(location.origin, created.id, created.key, created.adminToken));
-			navigate(url.pathname + url.hash);
+			navigate(url.pathname + url.hash, { state: { created: true } });
 		} catch (caught) {
 			error = errorMessage(caught);
 			busy = false;

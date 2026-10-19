@@ -68,5 +68,18 @@
 	"error.tooLarge": "Die Umfrage ist zu gross. Kürze die Texte oder entferne Termine.",
 	"error.invalidExpiry": "Das Ablaufdatum wurde nicht akzeptiert. Wähle ein früheres Datum.",
 	"error.unreadable": "Der Link ist unvollständig oder falsch: Mit dem Schlüssel darin lässt sich die Umfrage nicht entschlüsseln.",
-	"error.generic": "Etwas ist schiefgelaufen. Versuche es nochmals."
+	"error.generic": "Etwas ist schiefgelaufen. Versuche es nochmals.",
+	"share.title": "Deine Umfrage ist bereit",
+	"share.lead": "Teile den Link für Teilnehmende mit allen, die abstimmen sollen. Den Admin-Link behältst du für dich.",
+	"share.warningTitle": "Speichere beide Links jetzt",
+	"share.warning": "Der Schlüssel zur Umfrage steckt nur in diesen Links, der Server kennt ihn nicht. Geht ein Link verloren, kann ihn niemand wiederherstellen, auch wir nicht.",
+	"share.participantLink": "Link für Teilnehmende",
+	"share.participantHint": "Alle mit diesem Link können die Umfrage sehen und abstimmen.",
+	"share.adminLink": "Admin-Link",
+	"share.adminHint": "Damit bearbeitest, schliesst oder löschst du die Umfrage. Gib ihn nicht weiter.",
+	"share.done": "Zur Umfrage",
+	"copy.copy": "Kopieren",
+	"copy.copied": "Kopiert",
+	"copy.copiedMessage": "In die Zwischenablage kopiert.",
+	"copy.selected": "Der Link ist markiert. Kopiere ihn mit Ctrl+C oder ⌘C."
 }

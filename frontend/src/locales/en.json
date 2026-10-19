@@ -68,5 +68,18 @@
 	"error.tooLarge": "The poll is too large. Shorten the texts or remove some dates.",
 	"error.invalidExpiry": "The expiry date was not accepted. Pick an earlier date.",
 	"error.unreadable": "The link is incomplete or wrong: the key in it doesn't decrypt the poll.",
-	"error.generic": "Something went wrong. Please try again."
+	"error.generic": "Something went wrong. Please try again.",
+	"share.title": "Your poll is ready",
+	"share.lead": "Share the participant link with everyone who should vote. Keep the admin link to yourself.",
+	"share.warningTitle": "Save both links now",
+	"share.warning": "The poll's key exists only in these links; the server doesn't know it. If a link is lost, nobody can recover it, not even us.",
+	"share.participantLink": "Participant link",
+	"share.participantHint": "Anyone with this link can see the poll and vote.",
+	"share.adminLink": "Admin link",
+	"share.adminHint": "With it you edit, close or delete the poll. Don't pass it on.",
+	"share.done": "Go to the poll",
+	"copy.copy": "Copy",
+	"copy.copied": "Copied",
+	"copy.copiedMessage": "Copied to the clipboard.",
+	"copy.selected": "The link is selected. Copy it with Ctrl+C or ⌘C."
 }
