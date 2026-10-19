@@ -84,7 +84,8 @@ frontend/
   src/App.svelte            route switch
   src/components/           shared UI components
   src/routes/               one component per page
-  src/lib/                  logic: api.ts, base64url.ts, crypto.ts, i18n.ts + i18n.svelte.ts, links.ts, model.ts, polls.ts, routes.ts + router.svelte.ts, storage.ts
+  src/lib/                  logic: api.ts, base64url.ts, crypto.ts, deviceStore.ts, i18n.ts + i18n.svelte.ts,
+                            links.ts, model.ts, polls.ts, routes.ts + router.svelte.ts, storage.ts
   src/locales/{de,en}.json  translations (de.json is the source of truth for keys)
 migrations/                 NNNN_description.sql
 public/                     web root on the server
@@ -152,6 +153,7 @@ npm --prefix frontend run build
 - All UI text goes through `t('key')` from `i18n.svelte.ts`. Add each key to every file in `src/locales/`; a test enforces identical keys and placeholders. German copy uses Swiss spelling (ss, never ß) and the informal "du".
 - **CSS:** global tokens live in `src/app.css`; components use scoped `<style>` blocks. **No `style="…"` attributes in markup**, because the hash-based CSP blocks them. Use classes, or `style:` directives where something must be dynamic. SVG colours use presentation attributes (`fill="…"`).
 - API calls go only through `src/lib/api.ts`; pass tokens with the `token` option. localStorage goes only through `src/lib/storage.ts`, which never throws. Treat everything stored there as optional.
+- Components handle poll data through `src/lib/polls.ts`, which encrypts before sending and validates after decrypting (`model.ts`), not through `crypto.ts` or the poll endpoints of `api.ts`. Links are built and parsed in `links.ts`; the polls saved in this browser (keys and tokens) go through `deviceStore.ts`.
 - Prettier formats everything (tabs, single quotes, 120-character lines).
 
 ## Database conventions

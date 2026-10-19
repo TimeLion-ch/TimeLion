@@ -4,10 +4,8 @@
  * edit one response. The fragment uses URLSearchParams syntax.
  */
 
+import { ID_PATTERN, TOKEN_PATTERN } from './api';
 import { KEY_PATTERN } from './crypto';
-
-const TOKEN = /^[A-Za-z0-9_-]{43}$/;
-const EDIT = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{43})$/;
 
 export type Fragment = {
 	key: string;
@@ -47,11 +45,11 @@ export function parseFragment(hash: string): Fragment | null {
 
 	const fragment: Fragment = { key };
 	const adminToken = params.get('a');
-	if (adminToken !== null && TOKEN.test(adminToken)) {
+	if (adminToken !== null && TOKEN_PATTERN.test(adminToken)) {
 		fragment.adminToken = adminToken;
 	}
-	const [, responseId, editToken] = EDIT.exec(params.get('r') ?? '') ?? [];
-	if (responseId !== undefined && editToken !== undefined) {
+	const [responseId = '', editToken = '', ...rest] = (params.get('r') ?? '').split('.');
+	if (rest.length === 0 && ID_PATTERN.test(responseId) && TOKEN_PATTERN.test(editToken)) {
 		fragment.edit = { responseId, editToken };
 	}
 	return fragment;

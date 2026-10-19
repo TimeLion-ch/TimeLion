@@ -100,14 +100,18 @@ export type CreatedResponse = { id: string; editToken: string; createdAt: number
 
 export type UpdatedResponse = { id: string; updatedAt: number };
 
-const ID = /^[0-9a-f]{32}$/;
+/** Poll and response IDs (docs/api.md → Formats and limits). */
+export const ID_PATTERN = /^[0-9a-f]{32}$/;
+
+/** Admin and edit tokens: 32 random bytes as base64url. */
+export const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 /**
  * IDs are checked before they go into a path, so that `..` or `/` can't reach another endpoint. A malformed ID gets
  * the same `not_found` as from the server, without a request.
  */
 function checkedId(id: string): string {
-	if (!ID.test(id)) {
+	if (!ID_PATTERN.test(id)) {
 		throw new ApiError(404, 'not_found', 'Not found.');
 	}
 	return id;
