@@ -14,6 +14,7 @@ use TimeLion\Database\Migrator;
 use TimeLion\Deploy\DeployToken;
 use TimeLion\Http\ErrorHandler;
 use TimeLion\Http\Middleware\ApiHeadersMiddleware;
+use TimeLion\Http\Middleware\PurgeMiddleware;
 
 /**
  * Builds the Slim application: container, routes and middleware.
@@ -23,9 +24,9 @@ final class Kernel
 	public const string BASE_PATH = '/api';
 
 	/**
-	 * @return App<Container>
+	 * The service container, also used by the CLI scripts in bin/.
 	 */
-	public static function createApp(Config $config): App
+	public static function createContainer(Config $config): Container
 	{
 		$builder = new ContainerBuilder();
 		$builder->addDefinitions([
@@ -36,13 +37,24 @@ final class Kernel
 			DeployToken::class => static fn(): DeployToken => new DeployToken(dirname(__DIR__) . '/var/deploy-token'),
 		]);
 
-		$app = AppFactory::createFromContainer($builder->build());
+		return $builder->build();
+	}
+
+	/**
+	 * @return App<Container>
+	 */
+	public static function createApp(Config $config): App
+	{
+		$app = AppFactory::createFromContainer(self::createContainer($config));
 		$app->setBasePath(self::BASE_PATH);
 
 		Routes::register($app);
 
 		// Slim middleware is LIFO: the last one added runs first (outermost).
 		$app->addRoutingMiddleware();
+		// Inside the error middleware, so a failure to build it (no database) still gets a JSON error response.
+		// Resolved from the container per request.
+		$app->add(PurgeMiddleware::class);
 		$errorMiddleware = $app->addErrorMiddleware(
 			displayErrorDetails: $config->isDev(),
 			logErrors: true,

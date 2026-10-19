@@ -98,9 +98,10 @@ Tasks:
   - `DELETE` returns **204** and accepts either the response's edit token **or** the poll's admin token. It is allowed even when the poll is closed.
   - Done when: tests cover every path, including a response ID that belongs to a different poll (404).
   - Next: the response limit is count-then-insert, not atomic, so concurrent requests can pass it by a few (documented). Every write endpoint now exists for 1.10 to rate-limit.
-- [ ] **1.9 Purging expired polls**
+- [x] **1.9 Purging expired polls** — done 2026-10-19
   - Add `src/Maintenance/Purger.php`, which deletes expired polls (cascading) and stale rate-limit rows (after 1.10). It runs with about 2% probability per API request (middleware, after the handler) and via `bin/purge.php` for hosts that offer cron.
   - Done when: tests with `FrozenClock` pass, and README and CLAUDE.md mention the optional cron job.
+  - Next: `Purger::purge()` returns counts per table (`['polls' => n]`); 1.10 adds the rate-limit rows. `AppTestCase` turns random purging off. `Kernel::createContainer()` serves bin/ scripts.
 - [ ] **1.10 Rate limiting**
   - Migration: `rate_limits(bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)`.
   - Bucket: `HMAC-SHA256(dailyKey, action + "|" + clientIp)`, where `dailyKey = HMAC-SHA256(config secret, "rate-limit|" + UTC date)`.

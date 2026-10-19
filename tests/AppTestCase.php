@@ -12,13 +12,15 @@ use Slim\App;
 use Slim\Psr7\Factory\ServerRequestFactory;
 use TimeLion\Clock;
 use TimeLion\Config;
+use TimeLion\Http\Middleware\PurgeMiddleware;
 use TimeLion\Kernel;
+use TimeLion\Maintenance\Purger;
 use TimeLion\Repository\PollRepository;
 use TimeLion\Repository\ResponseRepository;
 
 /**
  * Base class for HTTP-level tests: boots the real app against a freshly migrated test database (see TestDatabase)
- * and a FrozenClock.
+ * and a FrozenClock, with random purging switched off.
  */
 abstract class AppTestCase extends TestCase
 {
@@ -36,6 +38,11 @@ abstract class AppTestCase extends TestCase
 		$this->clock = new FrozenClock();
 		$this->app->getContainer()->set(PDO::class, $this->pdo);
 		$this->app->getContainer()->set(Clock::class, $this->clock);
+		// No random purges in tests; PurgeMiddlewareTest turns them on.
+		$this->app->getContainer()->set(
+			PurgeMiddleware::class,
+			static fn(Purger $purger): PurgeMiddleware => new PurgeMiddleware($purger, static fn(): bool => false),
+		);
 	}
 
 	protected function tearDown(): void

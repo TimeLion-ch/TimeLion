@@ -61,6 +61,19 @@ final readonly class PollRepository
 	}
 
 	/**
+	 * Deletes every poll that has expired by $now, and through the foreign key their responses.
+	 *
+	 * @return int the number of polls deleted
+	 */
+	public function deleteExpired(int $now): int
+	{
+		$statement = $this->pdo->prepare('DELETE FROM polls WHERE expires_at <= ?');
+		$statement->execute([$now]);
+
+		return $statement->rowCount();
+	}
+
+	/**
 	 * @param array<mixed> $row
 	 */
 	private static function hydrate(array $row): Poll
