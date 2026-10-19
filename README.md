@@ -4,7 +4,7 @@
 
 TimeLion is a simple, open-source, privacy-focused meeting scheduler. It is **end-to-end encrypted**: polls are encrypted in your browser, and the server only ever stores ciphertext. Use it for free on [timelion.ch](https://timelion.ch) or host it yourself.
 
-> **Status:** being rebuilt. Polls can be created, answered and managed again; legal pages, end-to-end tests and a security review come next (see the [roadmap](roadmap.md)).
+> **Status:** being rebuilt. Polls can be created, answered and managed again, end-to-end tests run in CI, and a security review is done; the legal pages and the first production deploy come next (see the [roadmap](roadmap.md)).
 
 ## How it works
 

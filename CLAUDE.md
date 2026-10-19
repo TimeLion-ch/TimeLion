@@ -2,7 +2,7 @@
 
 TimeLion ([timelion.ch](https://timelion.ch)) is a privacy-focused meeting scheduler. Someone creates a poll with date and time options and shares the link. Participants answer yes, maybe or no for each option, and the group picks a date. Polls are **end-to-end encrypted in the browser**, so the server only ever stores ciphertext.
 
-**Status:** the API, the frontend logic and the UI are done (roadmap Phases 0–3): polls can be created, answered, edited, closed and deleted. Further work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
+**Status:** the API, the frontend logic and the UI are done (roadmap Phases 0–3): polls can be created, answered, edited, closed and deleted. Of Phase 4, everything but the legal pages (4.2) is done: end-to-end tests, security.txt, the security review, the AGPL license, the logo license and the brand font. Further work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
 
 ## Stack
 
