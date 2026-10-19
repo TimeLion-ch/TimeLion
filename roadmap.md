@@ -71,9 +71,10 @@ Tasks:
   - They throw `ApiError::badRequest` with `invalid_ciphertext`, `ciphertext_too_large`, `invalid_expiry` or `invalid_field`.
   - Done when: data-provider tests cover valid and invalid values, including wrong types, empty strings and boundary sizes.
   - Next: patterns need the `D` modifier, or `$` also matches before a trailing newline (the ID check in 1.6 too).
-- [ ] **1.4 Repositories**
+- [x] **1.4 Repositories** — done 2026-10-19
   - `src/Repository/PollRepository.php` and `src/Repository/ResponseRepository.php`, using PDO with prepared statements: `insert`, `findActive($id, $now)` (which excludes expired polls), `update`, `delete`, `setClosed`, `countForPoll`, `listForPoll`.
   - Done when: repository tests cover expiry filtering, the cascade and ordering.
+  - Next: `PollRepository::update(Poll)` writes all mutable columns including `closed_at`, so there is no separate `setClosed`. Response lookups always take `(pollId, id)`. Entities are `Polls\Poll` and `Polls\PollResponse`; `tests/Fixtures.php` builds them.
 - [ ] **1.5 `POST /api/polls`: create a poll**
   - Body: `{ "ciphertext": string, "expiresAt": int }`. Response: **201** `{ "id", "adminToken", "createdAt", "expiresAt" }`.
   - The server generates the ID and the admin token and stores only the token's hash.
