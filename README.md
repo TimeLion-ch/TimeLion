@@ -63,4 +63,4 @@ The architecture, conventions and rules for contributors (human or AI) are in [C
 
 [AGPL-3.0](LICENSE). If you run a modified version of TimeLion for others, the AGPL asks you to offer its users the source code of your version (section 13): point the "Source code" link in the footer (`frontend/src/components/SiteFooter.svelte`) to it.
 
-The lion logo is ["Lion" from SVG Repo](https://www.svgrepo.com/svg/484717/lion), released under [CC0](https://www.svgrepo.com/page/licensing/#CC0). The font, [Plus Jakarta Sans](https://github.com/tokotype/PlusJakartaSans), is licensed under the [SIL Open Font License 1.1](frontend/src/assets/fonts/OFL.txt).
+The lion logo is ["Lion" from SVG Repo](https://www.svgrepo.com/svg/484717/lion), which is in the public domain ([SVG Repo's PD license](https://www.svgrepo.com/page/licensing/)). The font, [Plus Jakarta Sans](https://github.com/tokotype/PlusJakartaSans), is licensed under the [SIL Open Font License 1.1](frontend/src/assets/fonts/OFL.txt).
