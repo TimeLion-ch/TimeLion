@@ -29,8 +29,9 @@ If a task grows beyond roughly 400 changed lines (not counting tests and lock fi
 | D6  | The webspace offers FTP only, so the deploy uses FTP with mandatory TLS (lftp) and runs migrations via a one-time-token endpoint. Replaces "rsync over SSH" in D1 | 2026-10-18 |
 | D7  | The maximum poll lifetime (`MAX_LIFETIME`) is 365 days: `expiresAt` may be at most 365 days after the request that sets it        | 2026-10-19 |
 | D8  | Security contact: GitHub private vulnerability reporting, in `security.txt` and `SECURITY.md`; no e-mail address is published         | 2026-10-19 |
+| D9  | License: AGPL-3.0-only instead of GPL-3.0-only, so that whoever runs a modified public instance must publish their changes           | 2026-10-19 |
 
-Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), license (4.5), notifications (6.6).
+Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), notifications (6.6).
 
 ## Phase 0: Foundation ✅
 
@@ -223,8 +224,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
   - New regression tests: the CSP template stays hash-only (Vitest), every kind of API response carries the API headers (PHPUnit), and the page carries its headers (Playwright).
   - Checked without findings: there are no HTML sinks, and poll texts (URLs included) render as text; the only dynamic link comes from validated device-store IDs and keys. Tokens travel only in the `Authorization` header, are stored as hashes and compared with `hash_equals`. The API sends no CORS headers and uses no cookies. Every write is rate-limited and size-checked before parsing. Error messages carry no request data.
   - Added as tasks: the browser history note in 4.2. IPv6 rate limits were already in the Inbox.
-- [ ] **4.5 License** 🧭 keep GPL-3.0 or switch to AGPL-3.0
+- [x] **4.5 License** — done 2026-10-19 (D9: AGPL-3.0)
   - AGPL also requires anyone running a modified public instance to publish their changes, which fits a hosted privacy tool. Update LICENSE, `composer.json`, `frontend/package.json` and the README to match.
+  - Next: LICENSE is the text from gnu.org. The footer's "Source code" link is how timelion.ch offers the source (section 13); the README tells self-hosters to point it to their version.
 - [ ] **4.6 Logo license**
   - The lion SVG comes from SVG Repo. Check its license, then add attribution or replace it.
 - [ ] **4.7 Brand font (optional)**

@@ -61,4 +61,4 @@ The architecture, conventions and rules for contributors (human or AI) are in [C
 
 ## License
 
-[GPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE). If you run a modified version of TimeLion for others, the AGPL asks you to offer its users the source code of your version (section 13): point the "Source code" link in the footer (`frontend/src/components/SiteFooter.svelte`) to it.
