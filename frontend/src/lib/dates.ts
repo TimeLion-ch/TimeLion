@@ -70,6 +70,17 @@ export function browserTimeZone(): string {
 	}
 }
 
+/** The IANA timezones the browser knows, sorted; `current` is always among them. */
+export function timeZones(current: string): string[] {
+	let zones: string[] = [];
+	try {
+		zones = Intl.supportedValuesOf('timeZone');
+	} catch {
+		// Older browsers can't list them; the current one is still offered.
+	}
+	return zones.includes(current) ? zones : [current, ...zones].sort();
+}
+
 /**
  * The instant (milliseconds) at which the wall clock in `timeZone` shows `date` and `time` (`HH:MM`). A time that a
  * DST change skips or repeats gets one of its neighbouring instants.

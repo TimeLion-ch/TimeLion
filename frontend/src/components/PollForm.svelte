@@ -1,18 +1,12 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import { formatDate } from '../lib/format';
-	import { i18n, t } from '../lib/i18n.svelte';
+	import { timeZones } from '../lib/dates';
+	import { t } from '../lib/i18n.svelte';
 	import { limits } from '../lib/model';
-	import {
-		defaultExpiryDate,
-		maxExpiryDate,
-		toggleDay,
-		validateDraft,
-		type DraftErrors,
-		type PollDraft,
-	} from '../lib/pollDraft';
+	import { defaultExpiryDate, maxExpiryDate, toggleDay, validateDraft, type PollDraft } from '../lib/pollDraft';
 	import Button from './Button.svelte';
 	import Calendar from './Calendar.svelte';
+	import DayList from './DayList.svelte';
 	import Notice from './Notice.svelte';
 	import TextField from './TextField.svelte';
 
@@ -42,7 +36,9 @@
 	}: Props = $props();
 
 	const id = $props.id();
-	let errors: DraftErrors = $state({});
+	/** Errors show up after the first attempt to submit, and then follow every change. */
+	let attempted = $state(false);
+	const errors = $derived(attempted ? validateDraft(draft, today) : {});
 	let titleField: HTMLInputElement | HTMLTextAreaElement | undefined = $state();
 	let expiryField: HTMLInputElement | HTMLTextAreaElement | undefined = $state();
 	let datesGroup: HTMLFieldSetElement | undefined = $state();
@@ -51,14 +47,13 @@
 	let automaticExpiry = autoExpiry ? draft.expiryDate : null;
 
 	const selectedDates = $derived(draft.days.map((day) => day.date));
+	// svelte-ignore state_referenced_locally
+	const zones = timeZones(draft.timezone);
 
 	function toggle(date: string) {
 		draft.days = toggleDay(draft.days, date);
 		if (automaticExpiry !== null && draft.expiryDate === automaticExpiry) {
 			draft.expiryDate = automaticExpiry = defaultExpiryDate(draft.days, today);
-		}
-		if (errors.days !== undefined) {
-			errors = validateDraft(draft, today);
 		}
 	}
 
@@ -67,16 +62,19 @@
 		if (busy) {
 			return;
 		}
-		errors = validateDraft(draft, today);
+		attempted = true;
 		if (Object.keys(errors).length === 0) {
 			onsubmit(draft);
 			return;
 		}
 		await tick();
+		const firstSlot = Object.keys(errors.slots ?? {})[0];
 		if (errors.title !== undefined) {
 			titleField?.focus();
 		} else if (errors.days !== undefined) {
 			datesGroup?.querySelector<HTMLButtonElement>('button[data-date][tabindex="0"]')?.focus();
+		} else if (firstSlot !== undefined) {
+			datesGroup?.querySelector<HTMLInputElement>(`[data-slot="${firstSlot}"]`)?.focus();
 		} else {
 			expiryField?.focus();
 		}
@@ -115,36 +113,20 @@
 				min={today}
 				describedby={errors.days === undefined ? undefined : `${id}-dates-error`}
 			/>
-			<div class="picked">
-				<h3>{t('form.selectedDates', { count: draft.days.length })}</h3>
-				{#if draft.days.length === 0}
-					<p class="hint">{t('form.noDates')}</p>
-				{:else}
-					<ul>
-						{#each draft.days as day (day.date)}
-							<li>
-								<span>{formatDate(day.date, i18n.locale)}</span>
-								<Button
-									variant="quiet"
-									size="small"
-									aria-label={t('form.removeDate', {
-										date: formatDate(day.date, i18n.locale, 'long'),
-									})}
-									onclick={() => toggle(day.date)}
-								>
-									<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"
-										><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="2" /></svg
-									>
-								</Button>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
+			<DayList bind:days={draft.days} errors={errors.slots} onremove={toggle} />
 		</div>
 		{#if errors.days !== undefined}
 			<p id="{id}-dates-error" class="error">{t(errors.days)}</p>
 		{/if}
+		<div class="zone">
+			<label for="{id}-timezone">{t('form.timezone')}</label>
+			<p id="{id}-timezone-hint" class="hint">{t('form.timezoneHint')}</p>
+			<select id="{id}-timezone" bind:value={draft.timezone} aria-describedby="{id}-timezone-hint">
+				{#each zones as zone (zone)}
+					<option value={zone}>{zone.replaceAll('_', ' ')}</option>
+				{/each}
+			</select>
+		</div>
 	</fieldset>
 
 	<fieldset>
@@ -224,29 +206,15 @@
 		}
 	}
 
-	h3 {
-		margin-bottom: var(--space-2);
-		font-size: 1rem;
-	}
-
-	ul {
+	.zone {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-1);
-		margin: 0;
-		padding: 0;
-		list-style: none;
+		max-width: 24rem;
 	}
 
-	li {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-2);
-		padding-left: var(--space-3);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-small);
-		background: var(--color-surface-soft);
+	.zone label {
+		font-weight: 700;
 	}
 
 	.check {

@@ -163,8 +163,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
       - Next: dates are `YYYY-MM-DD` strings with UTC arithmetic; `zonedToUtc(date, time, timeZone)` converts wall-clock times. `format.ts` uses de-CH and en-GB. `errorMessage(error)` returns a message key. `Button` with `href` renders an internal link.
     - [x] **3.1b Month calendar**: `components/Calendar.svelte`, multi-select and keyboard accessible. — done 2026-10-19
     - [x] **3.1c The `/new` page**: `lib/pollDraft.ts` (form state → poll document and expiry), `PollForm`, `CreatePoll`, the route and the button on the home page. — done 2026-10-19
-- [ ] **3.2 Create a poll: time slots**
+- [x] **3.2 Create a poll: time slots** — done 2026-10-19
   - Optional time ranges per date ("all day" by default), a "copy times to all dates" action, and the timezone shown (default: the browser's).
+  - Next: a `DraftDay` has `slots` (`{ start, end }` as `HH:MM`, the end optional); an end before the start is on the next day. `DayList` edits them; `PollForm` validates live after the first submit.
 - [ ] **3.3 Share screen**
   - Right after creation, show the participant link and admin link in copy fields (Clipboard API with a select-text fallback), with a clear warning that lost links cannot be recovered. It can be dismissed and appears only once per poll.
 - [ ] **3.4 Poll page: viewing** (route `/p/:id`, 32-hex IDs only)

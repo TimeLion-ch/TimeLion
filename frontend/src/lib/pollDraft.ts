@@ -8,9 +8,19 @@ import { addDays, zonedToUtc } from './dates';
 import type { MessageKey } from './i18n.svelte';
 import { limits, type Poll, type PollOption } from './model';
 
+/** A time range on one day; the end is optional, and an end before the start is on the next day. */
+export type DraftSlot = {
+	/** `HH:MM`, or empty while the user hasn't entered it. */
+	start: string;
+	/** `HH:MM` or empty. */
+	end: string;
+};
+
 export type DraftDay = {
 	/** `YYYY-MM-DD` */
 	date: string;
+	/** No slots: the whole day is one option. Otherwise every slot is an option. */
+	slots: DraftSlot[];
 };
 
 export type PollDraft = {
@@ -25,7 +35,10 @@ export type PollDraft = {
 	expiryDate: string;
 };
 
-export type DraftErrors = Partial<Record<'title' | 'days' | 'expiry', MessageKey>>;
+export type DraftErrors = Partial<Record<'title' | 'days' | 'expiry', MessageKey>> & {
+	/** By `slotKey(date, index)`. */
+	slots?: Record<string, MessageKey>;
+};
 
 /** How long a poll is kept after its last date, unless the creator chooses otherwise. */
 export const DEFAULT_EXPIRY_DAYS = 30;
@@ -45,12 +58,32 @@ export function emptyDraft(timezone: string, today: string): PollDraft {
 	};
 }
 
-/** Adds the date, or removes it if it is already there. */
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Adds the date (as a whole day), or removes it if it is already there. */
 export function toggleDay(days: DraftDay[], date: string): DraftDay[] {
 	if (days.some((day) => day.date === date)) {
 		return days.filter((day) => day.date !== date);
 	}
-	return [...days, { date }].sort((a, b) => (a.date < b.date ? -1 : 1));
+	return [...days, { date, slots: [] }].sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+/** Gives every day a copy of the slots of the day `from`. */
+export function copySlots(days: DraftDay[], from: string): DraftDay[] {
+	const source = days.find((day) => day.date === from);
+	if (source === undefined) {
+		return days;
+	}
+	return days.map((day) => ({ ...day, slots: source.slots.map((slot) => ({ ...slot })) }));
+}
+
+export function slotKey(date: string, index: number): string {
+	return `${date}/${index}`;
+}
+
+/** True if the slot ends on the next day (its end is before its start). */
+export function endsNextDay(slot: DraftSlot): boolean {
+	return TIME.test(slot.start) && TIME.test(slot.end) && slot.end < slot.start;
 }
 
 /** The last day the expiry can be set to, so that its end stays within the server's maximum lifetime. */
@@ -73,7 +106,7 @@ export function expiresAt(draft: Pick<PollDraft, 'expiryDate' | 'timezone'>, now
 }
 
 export function optionCount(draft: Pick<PollDraft, 'days'>): number {
-	return draft.days.length;
+	return draft.days.reduce((count, day) => count + Math.max(1, day.slots.length), 0);
 }
 
 /** @returns the problems by field; empty if the draft can be saved */
@@ -88,12 +121,53 @@ export function validateDraft(draft: PollDraft, today: string): DraftErrors {
 	} else if (count > limits.options) {
 		errors.days = 'form.error.tooManyOptions';
 	}
+	const slots = slotErrors(draft.days);
+	if (Object.keys(slots).length > 0) {
+		errors.slots = slots;
+	}
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.expiryDate) || draft.expiryDate < today) {
 		errors.expiry = 'form.error.expiryInvalid';
 	} else if (draft.expiryDate > maxExpiryDate(today)) {
 		errors.expiry = 'form.error.expiryTooLate';
 	}
 	return errors;
+}
+
+function slotErrors(days: DraftDay[]): Record<string, MessageKey> {
+	const errors: Record<string, MessageKey> = {};
+	for (const day of days) {
+		const seen = new Set<string>();
+		day.slots.forEach((slot, index) => {
+			const key = slotKey(day.date, index);
+			if (!TIME.test(slot.start)) {
+				errors[key] = 'form.error.startRequired';
+			} else if (slot.end !== '' && !TIME.test(slot.end)) {
+				errors[key] = 'form.error.endInvalid';
+			} else if (slot.end === slot.start) {
+				errors[key] = 'form.error.endEqualsStart';
+			} else if (seen.has(`${slot.start}-${slot.end}`)) {
+				errors[key] = 'form.error.duplicateTime';
+			}
+			seen.add(`${slot.start}-${slot.end}`);
+		});
+	}
+	return errors;
+}
+
+/** The options of a day without IDs, in time order: the whole day, or one per slot. */
+function dayOptions(day: DraftDay): Omit<PollOption, 'id'>[] {
+	if (day.slots.length === 0) {
+		return [{ start: day.date }];
+	}
+	return day.slots
+		.map((slot) => {
+			const option: Omit<PollOption, 'id'> = { start: `${day.date}T${slot.start}` };
+			if (slot.end !== '') {
+				option.end = `${endsNextDay(slot) ? addDays(day.date, 1) : day.date}T${slot.end}`;
+			}
+			return option;
+		})
+		.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : (a.end ?? '') < (b.end ?? '') ? -1 : 1));
 }
 
 /** The poll document. Texts are trimmed; empty optional texts are left out. */
@@ -107,7 +181,7 @@ export function buildPoll(draft: PollDraft, randomId: () => string = newOptionId
 		ids.add(id);
 		return id;
 	};
-	const options: PollOption[] = draft.days.map((day) => ({ id: uniqueId(), start: day.date }));
+	const options: PollOption[] = draft.days.flatMap(dayOptions).map((option) => ({ id: uniqueId(), ...option }));
 
 	const poll: Poll = {
 		v: 1,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, isoDate, monthGrid, todayIn, weekday, zonedToUtc } from './dates';
+import { addDays, addMonths, isoDate, monthGrid, timeZones, todayIn, weekday, zonedToUtc } from './dates';
 
 describe('date arithmetic', () => {
 	it('normalises overflowing parts', () => {
@@ -54,6 +54,14 @@ describe('todayIn', () => {
 		expect(todayIn('UTC', instant)).toBe('2026-10-19');
 		expect(todayIn('Europe/Zurich', instant)).toBe('2026-10-20');
 		expect(todayIn('America/New_York', instant)).toBe('2026-10-19');
+	});
+});
+
+describe('timeZones', () => {
+	it('lists the known timezones and always the current one', () => {
+		expect(timeZones('Europe/Zurich')).toContain('America/New_York');
+		expect(timeZones('Europe/Zurich')).toContain('Europe/Zurich');
+		expect(timeZones('Etc/Unknown')).toContain('Etc/Unknown');
 	});
 });
 

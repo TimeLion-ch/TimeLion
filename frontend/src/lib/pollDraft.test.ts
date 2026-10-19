@@ -3,11 +3,15 @@ import { serverLimits } from './api';
 import { parsePoll } from './model';
 import {
 	buildPoll,
+	copySlots,
 	defaultExpiryDate,
 	emptyDraft,
+	endsNextDay,
 	expiresAt,
 	maxExpiryDate,
 	newOptionId,
+	optionCount,
+	slotKey,
 	toggleDay,
 	validateDraft,
 	type PollDraft,
@@ -16,7 +20,12 @@ import {
 const today = '2026-10-19';
 
 function draft(changes: Partial<PollDraft> = {}): PollDraft {
-	return { ...emptyDraft('Europe/Zurich', today), title: 'Grillabend', days: [{ date: '2026-11-03' }], ...changes };
+	return {
+		...emptyDraft('Europe/Zurich', today),
+		title: 'Grillabend',
+		days: [{ date: '2026-11-03', slots: [] }],
+		...changes,
+	};
 }
 
 describe('toggleDay', () => {
@@ -26,19 +35,63 @@ describe('toggleDay', () => {
 		days = toggleDay(days, '2026-11-04');
 		expect(days.map((day) => day.date)).toEqual(['2026-11-03', '2026-11-04', '2026-11-05']);
 		expect(toggleDay(days, '2026-11-04').map((day) => day.date)).toEqual(['2026-11-03', '2026-11-05']);
+		expect(days.every((day) => day.slots.length === 0)).toBe(true);
+	});
+});
+
+describe('time slots', () => {
+	it('copies the slots of one day to all days', () => {
+		const days = copySlots(
+			[
+				{ date: '2026-11-03', slots: [{ start: '18:00', end: '22:00' }] },
+				{ date: '2026-11-04', slots: [] },
+				{ date: '2026-11-05', slots: [{ start: '08:00', end: '' }] },
+			],
+			'2026-11-03',
+		);
+		expect(days.map((day) => day.slots)).toEqual([
+			[{ start: '18:00', end: '22:00' }],
+			[{ start: '18:00', end: '22:00' }],
+			[{ start: '18:00', end: '22:00' }],
+		]);
+		expect(days[1]?.slots[0]).not.toBe(days[0]?.slots[0]);
+	});
+
+	it('counts a day without slots as one option', () => {
+		const days = [
+			{ date: '2026-11-03', slots: [] },
+			{
+				date: '2026-11-04',
+				slots: [
+					{ start: '09:00', end: '' },
+					{ start: '14:00', end: '' },
+				],
+			},
+		];
+		expect(optionCount({ days })).toBe(3);
+	});
+
+	it('knows when a slot ends on the next day', () => {
+		expect(endsNextDay({ start: '22:00', end: '01:00' })).toBe(true);
+		expect(endsNextDay({ start: '18:00', end: '22:00' })).toBe(false);
+		expect(endsNextDay({ start: '18:00', end: '' })).toBe(false);
 	});
 });
 
 describe('expiry', () => {
 	it('defaults to 30 days after the last date', () => {
-		expect(defaultExpiryDate([{ date: '2026-11-03' }, { date: '2026-12-01' }], today)).toBe('2026-12-31');
+		const days = [
+			{ date: '2026-11-03', slots: [] },
+			{ date: '2026-12-01', slots: [] },
+		];
+		expect(defaultExpiryDate(days, today)).toBe('2026-12-31');
 		expect(defaultExpiryDate([], today)).toBe('2026-11-18');
 		expect(emptyDraft('UTC', today).expiryDate).toBe('2026-11-18');
 	});
 
 	it('is capped at the maximum lifetime', () => {
 		expect(maxExpiryDate(today)).toBe('2027-10-18');
-		expect(defaultExpiryDate([{ date: '2027-10-01' }], today)).toBe('2027-10-18');
+		expect(defaultExpiryDate([{ date: '2027-10-01', slots: [] }], today)).toBe('2027-10-18');
 	});
 
 	it('ends with the expiry day in the poll timezone', () => {
@@ -70,8 +123,38 @@ describe('validateDraft', () => {
 
 	it('requires at least one date and at most the option limit', () => {
 		expect(validateDraft(draft({ days: [] }), today).days).toBe('form.error.datesRequired');
-		const days = Array.from({ length: 101 }, (_, index) => ({ date: `2027-01-01T${index}` }));
+		const slots = Array.from({ length: 51 }, (_, index) => ({
+			start: `${String(index % 24).padStart(2, '0')}:00`,
+			end: '',
+		}));
+		const days = [
+			{ date: '2026-11-03', slots },
+			{ date: '2026-11-04', slots },
+		];
 		expect(validateDraft(draft({ days }), today).days).toBe('form.error.tooManyOptions');
+		expect(validateDraft(draft({ days: days.slice(0, 1) }), today).days).toBeUndefined();
+	});
+
+	it('checks every slot', () => {
+		const days = [
+			{
+				date: '2026-11-03',
+				slots: [
+					{ start: '', end: '' },
+					{ start: '18:00', end: '18:00' },
+					{ start: '18:00', end: '22:00' },
+					{ start: '18:00', end: '22:00' },
+					{ start: '20:00', end: '7 pm' },
+					{ start: '22:00', end: '01:00' },
+				],
+			},
+		];
+		expect(validateDraft(draft({ days }), today).slots).toEqual({
+			[slotKey('2026-11-03', 0)]: 'form.error.startRequired',
+			[slotKey('2026-11-03', 1)]: 'form.error.endEqualsStart',
+			[slotKey('2026-11-03', 3)]: 'form.error.duplicateTime',
+			[slotKey('2026-11-03', 4)]: 'form.error.endInvalid',
+		});
 	});
 
 	it('checks the expiry date', () => {
@@ -89,7 +172,10 @@ describe('buildPoll', () => {
 				title: '  Grillabend ',
 				description: ' ',
 				location: 'Bern',
-				days: [{ date: '2026-11-03' }, { date: '2026-11-04' }],
+				days: [
+					{ date: '2026-11-03', slots: [] },
+					{ date: '2026-11-04', slots: [] },
+				],
 			}),
 		);
 		expect(parsePoll(poll)).toEqual(poll);
@@ -100,8 +186,37 @@ describe('buildPoll', () => {
 
 	it('gives every option a different ID', () => {
 		const ids = ['aaaaaaaa', 'aaaaaaaa', 'bbbbbbbb'];
-		const poll = buildPoll(draft({ days: [{ date: '2026-11-03' }, { date: '2026-11-04' }] }), () => ids.shift()!);
+		const days = [
+			{ date: '2026-11-03', slots: [] },
+			{ date: '2026-11-04', slots: [] },
+		];
+		const poll = buildPoll(draft({ days }), () => ids.shift()!);
 		expect(poll.options.map((option) => option.id)).toEqual(['aaaaaaaa', 'bbbbbbbb']);
+	});
+
+	it('turns slots into timed options in order, ending on the next day if the end is earlier', () => {
+		const poll = buildPoll(
+			draft({
+				days: [
+					{
+						date: '2026-11-03',
+						slots: [
+							{ start: '22:00', end: '01:00' },
+							{ start: '09:00', end: '' },
+							{ start: '09:00', end: '10:30' },
+						],
+					},
+					{ date: '2026-11-04', slots: [] },
+				],
+			}),
+		);
+		expect(parsePoll(poll)).toEqual(poll);
+		expect(poll.options.map(({ start, end }) => [start, end])).toEqual([
+			['2026-11-03T09:00', undefined],
+			['2026-11-03T09:00', '2026-11-03T10:30'],
+			['2026-11-03T22:00', '2026-11-04T01:00'],
+			['2026-11-04', undefined],
+		]);
 	});
 });
 
