@@ -151,17 +151,18 @@ Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
 
 Every UI task: all text goes in both locale files; there are no CSP violations; the layout works at 360 px width and in light and dark mode; it's keyboard accessible.
 
-- [ ] **3.1 Create a poll: basics** (route `/new`, `src/routes/CreatePoll.svelte`). Depends on 2.5 and 2.6.
+- [x] **3.1 Create a poll: basics** (route `/new`, `src/routes/CreatePoll.svelte`). Depends on 2.5 and 2.6. — done 2026-10-19
   - Fields: title, description and location; date selection via a month calendar (multi-select, keyboard accessible); expiry (default: 30 days after the last option, capped at `MAX_LIFETIME`).
   - Create the reusable components it needs in `src/components/` (Button, TextField, Notice, …).
   - On the home page, replace the "being rebuilt" notice with a "Create poll" button.
   - Submit: `polls.createPoll`, save to the device store, then navigate to the admin link.
   - Done when: creating a poll works end to end against `composer serve`.
+  - Next: `PollForm` edits a `PollDraft` (`bind:draft`); `buildPoll(draft)` makes the document and `expiresAt(draft, now)` the expiry. After creating, the page navigates to the admin link, which has no route until 3.3/3.4.
   - Split, because it is over 400 lines:
     - [x] **3.1a Building blocks**: colour tokens and base form styles in `app.css`, `Button`, `TextField` and `Notice`, plus `lib/dates.ts` (date arithmetic and timezones), `lib/format.ts` (`Intl` formatting) and `lib/errors.ts` (error messages). — done 2026-10-19
       - Next: dates are `YYYY-MM-DD` strings with UTC arithmetic; `zonedToUtc(date, time, timeZone)` converts wall-clock times. `format.ts` uses de-CH and en-GB. `errorMessage(error)` returns a message key. `Button` with `href` renders an internal link.
     - [x] **3.1b Month calendar**: `components/Calendar.svelte`, multi-select and keyboard accessible. — done 2026-10-19
-    - [ ] **3.1c The `/new` page**: `lib/pollDraft.ts` (form state → poll document and expiry), `PollForm`, `CreatePoll`, the route and the button on the home page.
+    - [x] **3.1c The `/new` page**: `lib/pollDraft.ts` (form state → poll document and expiry), `PollForm`, `CreatePoll`, the route and the button on the home page. — done 2026-10-19
 - [ ] **3.2 Create a poll: time slots**
   - Optional time ranges per date ("all day" by default), a "copy times to all dates" action, and the timezone shown (default: the browser's).
 - [ ] **3.3 Share screen**

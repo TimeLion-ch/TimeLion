@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '../components/Button.svelte';
 	import Logo from '../components/Logo.svelte';
 	import { t } from '../lib/i18n.svelte';
 
@@ -17,7 +18,7 @@
 	<Logo size={112} />
 	<h1>{t('home.title')}</h1>
 	<p class="lead">{t('home.lead')}</p>
-	<p class="notice" role="status">{t('home.comingSoon')}</p>
+	<Button href="/new" variant="primary">{t('home.create')}</Button>
 </section>
 
 <section aria-labelledby="features-title">
@@ -50,14 +51,6 @@
 	.lead {
 		color: var(--color-muted);
 		font-size: 1.125rem;
-	}
-
-	.notice {
-		margin-top: var(--space-3);
-		padding: var(--space-2) var(--space-3);
-		border-radius: var(--radius);
-		background: var(--color-surface-soft);
-		font-weight: 600;
 	}
 
 	.features {
