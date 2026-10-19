@@ -26,7 +26,7 @@ Steps:
 ```bash
 composer install --no-dev --optimize-autoloader
 npm --prefix frontend ci && npm --prefix frontend run build   # writes public/index.html and public/.htaccess
-cp config.example.php config.php                              # then fill in database and secret
+cp config.example.php config.php                              # then fill in database, secret and privacy policy
 php bin/migrate.php
 ```
 

@@ -33,6 +33,13 @@ describe('request', () => {
 		});
 	});
 
+	it('loads the privacy policy', async () => {
+		const fetchMock = respond(200, { text: '## Verantwortlich' });
+
+		await expect(api.privacyPolicy()).resolves.toEqual({ text: '## Verantwortlich' });
+		expect(fetchMock).toHaveBeenCalledWith('/api/privacy-policy', expect.objectContaining({ method: 'GET' }));
+	});
+
 	it('maps API errors to ApiError', async () => {
 		respond(409, { error: { code: 'poll_closed', message: 'This poll is closed.' } });
 

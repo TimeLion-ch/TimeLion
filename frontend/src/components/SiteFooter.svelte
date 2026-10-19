@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from '../lib/i18n.svelte';
+	import { link } from '../lib/router.svelte';
 
 	const year = new Date().getFullYear();
 </script>
@@ -7,7 +8,10 @@
 <footer>
 	<div class="container">
 		<span>{t('footer.copyright', { year })}</span>
-		<a href="https://github.com/TimeLion-ch/TimeLion" rel="noreferrer" target="_blank">{t('footer.source')}</a>
+		<span class="links">
+			<a href="/privacy" use:link>{t('footer.privacy')}</a>
+			<a href="https://github.com/TimeLion-ch/TimeLion" rel="noreferrer" target="_blank">{t('footer.source')}</a>
+		</span>
 	</div>
 </footer>
 
@@ -19,7 +23,8 @@
 		font-size: 0.875rem;
 	}
 
-	div {
+	div,
+	.links {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;

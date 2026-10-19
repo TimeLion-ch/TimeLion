@@ -88,6 +88,18 @@ Checks that the application boots and the database answers. The deploy smoke tes
 
 **500** `internal_error` if the database is unreachable or the configuration is invalid.
 
+### `GET /api/privacy-policy`
+
+The privacy policy's text from `config.php` (`privacy_policy`), so that the operator's details are not in the repository. The text is German and uses the small format of `frontend/src/lib/markup.ts` (headings, paragraphs, lists, links); the frontend renders it as text, never as HTML.
+
+**200**
+
+```json
+{ "text": "## Das Wichtigste in Kürze\n\nTimeLion verschlüsselt …" }
+```
+
+**404** `not_found` if `privacy_policy` is `null`.
+
 ### `POST /api/deploy/migrate`
 
 Applies pending database migrations. The FTP deploy uses it because the webspace has no shell to run `bin/migrate.php` (see [CLAUDE.md → Deployment](../CLAUDE.md#deployment)). It is not part of the app's API.

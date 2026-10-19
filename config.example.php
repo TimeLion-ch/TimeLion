@@ -32,4 +32,7 @@ return [
 	// 'X-Forwarded-For' (its last entry is used) or 'X-Real-IP'. Leave null unless clients can only reach the app
 	// through that proxy: otherwise anyone can send the header and pick their own address.
 	'trusted_proxy_header' => null,
+
+	// The privacy policy (German), shown at /privacy and linked in the footer; null shows "not set up yet" there.
+	'privacy_policy' => null,
 ];

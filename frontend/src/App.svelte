@@ -7,6 +7,7 @@
 	import MyPolls from './routes/MyPolls.svelte';
 	import NotFound from './routes/NotFound.svelte';
 	import PollPage from './routes/PollPage.svelte';
+	import PrivacyPolicy from './routes/PrivacyPolicy.svelte';
 </script>
 
 <SiteHeader />
@@ -18,6 +19,8 @@
 		<CreatePoll />
 	{:else if router.route.name === 'my'}
 		<MyPolls />
+	{:else if router.route.name === 'privacy'}
+		<PrivacyPolicy />
 	{:else if router.route.name === 'poll'}
 		{#key `${router.route.id}${router.hash}`}
 			<PollPage id={router.route.id} hash={router.hash} />

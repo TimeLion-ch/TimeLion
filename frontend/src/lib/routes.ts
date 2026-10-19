@@ -3,7 +3,12 @@
  * the poll key (see CLAUDE.md → Encryption). Add new routes here and handle them in App.svelte.
  */
 export type Route =
-	{ name: 'home' } | { name: 'new' } | { name: 'my' } | { name: 'poll'; id: string } | { name: 'not-found' };
+	| { name: 'home' }
+	| { name: 'new' }
+	| { name: 'my' }
+	| { name: 'privacy' }
+	| { name: 'poll'; id: string }
+	| { name: 'not-found' };
 
 /** Poll IDs are 32 lowercase hex characters (docs/api.md); anything else is not a poll. */
 const POLL_PATH = /^\/p\/([0-9a-f]{32})$/;
@@ -19,6 +24,9 @@ export function matchRoute(pathname: string): Route {
 	}
 	if (path === '/my') {
 		return { name: 'my' };
+	}
+	if (path === '/privacy') {
+		return { name: 'privacy' };
 	}
 	const poll = POLL_PATH.exec(path);
 	if (poll?.[1] !== undefined) {
