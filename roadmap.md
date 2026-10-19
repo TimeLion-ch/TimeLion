@@ -169,13 +169,14 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [x] **3.3 Share screen** — done 2026-10-19
   - Right after creation, show the participant link and admin link in copy fields (Clipboard API with a select-text fallback), with a clear warning that lost links cannot be recovered. It can be dismissed and appears only once per poll.
   - Next: the route `poll` (`/p/{id}`) renders `PollPage`. "Just created" is history state (`navigate(path, { state: { created: true } })`, read as `router.state`), so the share screen survives a reload but not dismissal (`replaceState({})`). Outside it, `PollPage` still shows the 404 page until 3.4.
-- [ ] **3.4 Poll page: viewing** (route `/p/:id`, 32-hex IDs only)
+- [x] **3.4 Poll page: viewing** (route `/p/:id`, 32-hex IDs only) — done 2026-10-19
   - Load and decrypt the poll. Show the title, description and location, and an options × participants table with yes/maybe counts and the best option highlighted.
   - Error states: the link has no key; decryption fails ("link incomplete or wrong"); not found or expired; network error.
+  - Next: `ResultsTable` takes the poll and the loaded responses; the best options score 2 per yes and 1 per maybe (`results.ts`). Absolutely positioned content inside a scroll box needs a positioned box (`position: relative`), or it widens the page.
   - Split, because it is over 400 lines:
     - [x] **3.4a Loading and error states**: the route loads and decrypts the poll, saves it to the device store, shows the title, description, location and status, and the four error states. — done 2026-10-19
       - Next: `router.hash` is reactive and `App.svelte` re-creates `PollPage` for every ID and fragment. `loadProblem(error)` (errors.ts) sorts load errors.
-    - [ ] **3.4b Results table**: `lib/results.ts` (tallies, best option) and the options × participants table with totals and comments.
+    - [x] **3.4b Results table**: `lib/results.ts` (tallies, best option) and the options × participants table with totals and comments. — done 2026-10-19
 - [ ] **3.5 Voting**
   - Add a response (name plus yes/maybe/no per option, with maybe only if allowed), and edit or delete your own responses using the edit tokens from the device store. Closed polls are read-only.
 - [ ] **3.6 Admin panel** (visible when the fragment contains an admin token)

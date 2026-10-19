@@ -8,6 +8,7 @@ describe('formatDate and formatMonth', () => {
 	it('formats dates without a timezone shift', () => {
 		expect(plain(formatDate('2026-11-03', 'de'))).toBe('Di., 3. Nov. 2026');
 		expect(plain(formatDate('2026-11-03', 'de', 'long'))).toBe('Dienstag, 3. November 2026');
+		expect(plain(formatDate('2026-11-03', 'de', 'compact'))).toBe('Di., 3. Nov.');
 		expect(plain(formatDate('2026-11-03', 'en'))).toContain('3 Nov 2026');
 		expect(plain(formatMonth('2026-11', 'de'))).toBe('November 2026');
 		expect(plain(formatMonth('2027-01', 'en'))).toBe('January 2027');

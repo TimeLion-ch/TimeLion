@@ -100,5 +100,18 @@
 	"poll.timezone": "Zeiten in {zone}",
 	"poll.finalTitle": "Der Termin steht fest",
 	"poll.closed": "Diese Umfrage ist geschlossen. Antworten können nicht mehr abgegeben oder geändert werden.",
-	"poll.skipped": "Nicht lesbare Antworten: {count}. Sie werden nicht angezeigt."
+	"poll.skipped": "Nicht lesbare Antworten: {count}. Sie werden nicht angezeigt.",
+	"results.title": "Antworten ({count})",
+	"results.caption": "Abstimmung: Termine in den Spalten, Teilnehmende in den Zeilen",
+	"results.participant": "Teilnehmende",
+	"results.final": "Festgelegt",
+	"results.best": "Beliebteste",
+	"results.empty": "Noch keine Antworten.",
+	"results.yesTotal": "Total Ja",
+	"results.maybeTotal": "Total Vielleicht",
+	"results.comments": "Kommentare",
+	"vote.yes": "Ja",
+	"vote.maybe": "Vielleicht",
+	"vote.no": "Nein",
+	"vote.none": "Keine Antwort"
 }

@@ -14,15 +14,24 @@ export function intlLocale(locale: Locale): string {
 	return intlLocales[locale];
 }
 
-/** `short`: "Di., 3. Nov. 2026"; `long`: "Dienstag, 3. November 2026". */
-export function formatDate(date: string, locale: Locale, style: 'short' | 'long' = 'short'): string {
-	return new Intl.DateTimeFormat(intlLocales[locale], {
+/** `compact`: "Di., 3. Nov."; `short`: "Di., 3. Nov. 2026"; `long`: "Dienstag, 3. November 2026". */
+export type DateStyle = 'compact' | 'short' | 'long';
+
+function dateOptions(style: DateStyle): Intl.DateTimeFormatOptions {
+	const options: Intl.DateTimeFormatOptions = {
 		timeZone: 'UTC',
-		weekday: style,
+		weekday: style === 'long' ? 'long' : 'short',
 		day: 'numeric',
-		month: style,
-		year: 'numeric',
-	}).format(dateToUtc(date));
+		month: style === 'long' ? 'long' : 'short',
+	};
+	if (style !== 'compact') {
+		options.year = 'numeric';
+	}
+	return options;
+}
+
+export function formatDate(date: string, locale: Locale, style: DateStyle = 'short'): string {
+	return new Intl.DateTimeFormat(intlLocales[locale], dateOptions(style)).format(dateToUtc(date));
 }
 
 /** "November 2026" */
@@ -52,7 +61,7 @@ export type FormattedOption = {
 	time: string | null;
 };
 
-export function formatOption(option: PollOption, locale: Locale, style: 'short' | 'long' = 'short'): FormattedOption {
+export function formatOption(option: PollOption, locale: Locale, style: DateStyle = 'short'): FormattedOption {
 	const tag = intlLocales[locale];
 	const [startDate = '', startTime] = option.start.split('T');
 	const [endDate = '', endTime] = option.end?.split('T') ?? [];
@@ -61,13 +70,7 @@ export function formatOption(option: PollOption, locale: Locale, style: 'short' 
 		if (option.end === undefined) {
 			return { date: formatDate(startDate, locale, style), time: null };
 		}
-		const range = new Intl.DateTimeFormat(tag, {
-			timeZone: 'UTC',
-			weekday: style,
-			day: 'numeric',
-			month: style,
-			year: 'numeric',
-		});
+		const range = new Intl.DateTimeFormat(tag, dateOptions(style));
 		return { date: range.formatRange(dateToUtc(startDate), dateToUtc(endDate)), time: null };
 	}
 
@@ -87,7 +90,7 @@ export function formatOption(option: PollOption, locale: Locale, style: 'short' 
 }
 
 /** One line, e.g. for labels: "Di., 3. Nov. 2026, 18:00–22:00". */
-export function optionLabel(option: PollOption, locale: Locale, style: 'short' | 'long' = 'short'): string {
+export function optionLabel(option: PollOption, locale: Locale, style: DateStyle = 'short'): string {
 	const { date, time } = formatOption(option, locale, style);
 	return time === null ? date : `${date}, ${time}`;
 }

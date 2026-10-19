@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Button from '../components/Button.svelte';
 	import Notice from '../components/Notice.svelte';
+	import ResultsTable from '../components/ResultsTable.svelte';
 	import ShareScreen from '../components/ShareScreen.svelte';
 	import { deviceStore } from '../lib/deviceStore';
 	import { loadProblem, type LoadProblem } from '../lib/errors';
@@ -8,6 +9,7 @@
 	import { i18n, t } from '../lib/i18n.svelte';
 	import { parseFragment } from '../lib/links';
 	import { loadPoll, type LoadedPoll } from '../lib/polls';
+	import { hasTimes } from '../lib/results';
 	import { replaceState, router } from '../lib/router.svelte';
 
 	/** A poll, opened with the key (and maybe a token) from the link's fragment. */
@@ -94,6 +96,9 @@
 			{/if}
 			<p class="meta">
 				{t('poll.expires', { date: formatTimestamp(loaded.meta.expiresAt, i18n.locale) })}
+				{#if hasTimes(poll)}
+					· {t('poll.timezone', { zone: poll.timezone.replaceAll('_', ' ') })}
+				{/if}
 			</p>
 		</header>
 
@@ -112,6 +117,11 @@
 				<p>{t('poll.skipped', { count: loaded.skippedResponses.length })}</p>
 			</Notice>
 		{/if}
+
+		<section aria-labelledby="results-title">
+			<h2 id="results-title">{t('results.title', { count: loaded.responses.length })}</h2>
+			<ResultsTable {poll} responses={loaded.responses} />
+		</section>
 	</article>
 {/if}
 
@@ -165,5 +175,9 @@
 	.meta {
 		color: var(--color-muted);
 		font-size: 0.875rem;
+	}
+
+	h2 {
+		font-size: 1.25rem;
 	}
 </style>

@@ -100,5 +100,18 @@
 	"poll.timezone": "Times in {zone}",
 	"poll.finalTitle": "The date is set",
 	"poll.closed": "This poll is closed. Responses can no longer be added or changed.",
-	"poll.skipped": "Unreadable responses: {count}. They are not shown."
+	"poll.skipped": "Unreadable responses: {count}. They are not shown.",
+	"results.title": "Responses ({count})",
+	"results.caption": "Votes: dates in columns, participants in rows",
+	"results.participant": "Participant",
+	"results.final": "Chosen",
+	"results.best": "Most popular",
+	"results.empty": "No responses yet.",
+	"results.yesTotal": "Total yes",
+	"results.maybeTotal": "Total maybe",
+	"results.comments": "Comments",
+	"vote.yes": "Yes",
+	"vote.maybe": "Maybe",
+	"vote.no": "No",
+	"vote.none": "No answer"
 }
