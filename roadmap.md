@@ -177,11 +177,12 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
     - [x] **3.4a Loading and error states**: the route loads and decrypts the poll, saves it to the device store, shows the title, description, location and status, and the four error states. — done 2026-10-19
       - Next: `router.hash` is reactive and `App.svelte` re-creates `PollPage` for every ID and fragment. `loadProblem(error)` (errors.ts) sorts load errors.
     - [x] **3.4b Results table**: `lib/results.ts` (tallies, best option) and the options × participants table with totals and comments. — done 2026-10-19
-- [ ] **3.5 Voting**
+- [x] **3.5 Voting** — done 2026-10-19
   - Add a response (name plus yes/maybe/no per option, with maybe only if allowed), and edit or delete your own responses using the edit tokens from the device store. Closed polls are read-only.
+  - Next: `PollPage` keeps this browser's responses as `own` (device store) and reloads with `load()`; `VotePanel` takes them. `ConfirmButton` asks before anything that can't be undone.
   - Split, because it is over 400 lines:
     - [x] **3.5a Adding a response**: `lib/responseDraft.ts`, the voting form and the panel that sends it and saves the edit token to the device store. — done 2026-10-19
-    - [ ] **3.5b Editing and deleting your responses**: the list of this browser's responses with edit and delete (`ConfirmButton`), and "you" in the table.
+    - [x] **3.5b Editing and deleting your responses**: the list of this browser's responses with edit and delete (`ConfirmButton`), and "you" in the table. — done 2026-10-19
 - [ ] **3.6 Admin panel** (visible when the fragment contains an admin token)
   - Edit texts and options (warn that removing an option drops its votes), close and reopen, choose the final option, delete individual responses, and delete the poll (with confirmation).
 - [ ] **3.7 Responsive and accessible results table**

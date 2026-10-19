@@ -10,9 +10,11 @@
 	type Props = {
 		poll: Poll;
 		responses: LoadedResponse[];
+		/** The IDs of this browser's responses, marked as "you". */
+		own?: ReadonlySet<string>;
 	};
 
-	let { poll, responses }: Props = $props();
+	let { poll, responses, own = new Set() }: Props = $props();
 
 	const id = $props.id();
 	const tallies = $derived(
@@ -54,7 +56,10 @@
 		<tbody>
 			{#each responses as entry (entry.id)}
 				<tr>
-					<th scope="row" class="name">{entry.response.name}</th>
+					<th scope="row" class="name">
+						{entry.response.name}
+						{#if own.has(entry.id)}<span class="you">({t('results.you')})</span>{/if}
+					</th>
 					{#each poll.options as option (option.id)}
 						{@const vote = Object.hasOwn(entry.response.votes, option.id)
 							? entry.response.votes[option.id]
@@ -139,6 +144,11 @@
 		background: var(--color-surface);
 		text-align: left;
 		overflow-wrap: anywhere;
+	}
+
+	.you {
+		color: var(--color-muted);
+		font-weight: 400;
 	}
 
 	.date,

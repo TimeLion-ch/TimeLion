@@ -27,6 +27,7 @@
 	let own = $state<ResponseRef[]>([]);
 
 	const poll = $derived(loaded?.poll);
+	const ownIds = $derived(new Set(own.map((ref) => ref.id)));
 	const finalOption = $derived(poll?.options.find((option) => option.id === poll.finalOptionId));
 
 	async function load() {
@@ -124,7 +125,7 @@
 
 		<section aria-labelledby="results-title">
 			<h2 id="results-title">{t('results.title', { count: loaded.responses.length })}</h2>
-			<ResultsTable {poll} responses={loaded.responses} />
+			<ResultsTable {poll} responses={loaded.responses} own={ownIds} />
 		</section>
 
 		{#if loaded.meta.closedAt === null && fragment !== null}
