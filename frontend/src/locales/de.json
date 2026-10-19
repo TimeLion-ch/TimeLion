@@ -166,5 +166,8 @@
 	"edit.warning": "Du entfernst Termine, für die schon abgestimmt wurde ({count}). Die Stimmen dafür werden gelöscht:",
 	"edit.saveAnyway": "Trotzdem speichern",
 	"edit.back": "Zurück zum Formular",
-	"edit.saved": "Die Änderungen an der Umfrage sind gespeichert."
+	"edit.saved": "Die Änderungen an der Umfrage sind gespeichert.",
+	"results.yourVote": "Deine Antwort:",
+	"results.yourVoteNamed": "Deine Antwort ({name}):",
+	"results.who": "Wer hat wie abgestimmt?"
 }

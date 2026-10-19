@@ -24,7 +24,6 @@
 		),
 	);
 	const best = $derived(bestOptions(tallies));
-	const comments = $derived(responses.filter((entry) => entry.response.comment));
 </script>
 
 <!-- Focusable, so that keyboard users can scroll a table wider than the screen. -->
@@ -55,7 +54,7 @@
 		</thead>
 		<tbody>
 			{#each responses as entry (entry.id)}
-				<tr>
+				<tr class={{ own: own.has(entry.id) }}>
 					<th scope="row" class="name">
 						{entry.response.name}
 						{#if own.has(entry.id)}<span class="you">({t('results.you')})</span>{/if}
@@ -91,18 +90,6 @@
 		</tfoot>
 	</table>
 </div>
-
-{#if comments.length > 0}
-	<h3 class="comments-title">{t('results.comments')}</h3>
-	<ul class="comments">
-		{#each comments as entry (entry.id)}
-			<li>
-				<span class="author">{entry.response.name}</span>
-				<p class="text">{entry.response.comment}</p>
-			</li>
-		{/each}
-	</ul>
-{/if}
 
 <style>
 	.scroll {
@@ -200,37 +187,12 @@
 		font-size: 1.125rem;
 	}
 
+	tr.own > .name {
+		box-shadow: inset 4px 0 0 var(--color-primary);
+	}
+
 	.empty {
 		color: var(--color-muted);
 		text-align: left;
-	}
-
-	.comments-title {
-		margin-top: var(--space-4);
-		font-size: 1.0625rem;
-	}
-
-	.comments {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.comments li {
-		padding: var(--space-2) var(--space-3);
-		border-left: 3px solid var(--color-border-strong);
-		overflow-wrap: anywhere;
-	}
-
-	.text {
-		margin: 0;
-		white-space: pre-wrap;
-	}
-
-	.author {
-		font-weight: 700;
 	}
 </style>

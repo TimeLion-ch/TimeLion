@@ -189,8 +189,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
   - Split, because it is over 400 lines:
     - [x] **3.6a Admin actions**: close and reopen, choose the final option, delete individual (also unreadable) responses, delete the poll, and both links. — done 2026-10-19
     - [x] **3.6b Editing the poll**: the poll form for an existing poll, keeping option IDs (and so the votes) of unchanged options, with a warning before options with votes are removed. — done 2026-10-19
-- [ ] **3.7 Responsive and accessible results table**
+- [x] **3.7 Responsive and accessible results table** — done 2026-10-19
   - Mobile layout (options as a list showing your own vote and the totals), keyboard navigation, screen-reader labels, and enough contrast in both themes.
+  - Next: below 40rem `ResultsList` replaces `ResultsTable` (CSS only); comments are in `CommentList`. The table's scroll box is a focusable region, so the keyboard can scroll it. Text contrast is at least 4.5:1 and the focus ring and form borders at least 3:1 in both themes.
 - [ ] **3.8 My polls** (route `/my`, plus a "Meine Umfragen / My polls" link in the header, as in the old navbar)
   - List the polls from the device store (decrypting titles lazily), with open, forget and forget all. Explain that this list exists only in this browser.
 - [ ] **3.9 Calendar export**

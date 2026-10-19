@@ -1,8 +1,10 @@
 <script lang="ts">
 	import AdminPanel from '../components/AdminPanel.svelte';
 	import Button from '../components/Button.svelte';
+	import CommentList from '../components/CommentList.svelte';
 	import EditPoll from '../components/EditPoll.svelte';
 	import Notice from '../components/Notice.svelte';
+	import ResultsList from '../components/ResultsList.svelte';
 	import ResultsTable from '../components/ResultsTable.svelte';
 	import ShareScreen from '../components/ShareScreen.svelte';
 	import VotePanel from '../components/VotePanel.svelte';
@@ -172,7 +174,14 @@
 
 		<section aria-labelledby="results-title">
 			<h2 id="results-title">{t('results.title', { count: loaded.responses.length })}</h2>
-			<ResultsTable {poll} responses={loaded.responses} own={ownIds} />
+			<!-- One of the two layouts is shown, depending on the width (display: none hides the other from everyone). -->
+			<div class="wide">
+				<ResultsTable {poll} responses={loaded.responses} own={ownIds} />
+			</div>
+			<div class="narrow">
+				<ResultsList {poll} responses={loaded.responses} own={ownIds} />
+			</div>
+			<CommentList responses={loaded.responses} />
 		</section>
 
 		{#if loaded.meta.closedAt === null && fragment !== null}
@@ -235,5 +244,19 @@
 
 	h2 {
 		font-size: 1.25rem;
+	}
+
+	.wide {
+		display: none;
+	}
+
+	@media (min-width: 40rem) {
+		.wide {
+			display: block;
+		}
+
+		.narrow {
+			display: none;
+		}
 	}
 </style>
