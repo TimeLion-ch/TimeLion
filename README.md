@@ -53,7 +53,7 @@ composer serve                      # http://localhost:8000
 
 For frontend work with hot reload, run `npm --prefix frontend run dev` (http://localhost:5173) alongside `composer serve`.
 
-Checks: `composer check` (PHP) and `npm --prefix frontend run verify` (frontend).
+Checks: `composer check` (PHP), `npm --prefix frontend run verify` (frontend) and `npm --prefix frontend run e2e` (end-to-end tests with Playwright; install its browser once with `npx --prefix frontend playwright install chromium`).
 
 The architecture, conventions and rules for contributors (human or AI) are in [CLAUDE.md](CLAUDE.md).
 

@@ -204,9 +204,10 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 
 ## Phase 4: Privacy, legal, quality
 
-- [ ] **4.1 End-to-end tests**
+- [x] **4.1 End-to-end tests** — done 2026-10-19
   - Playwright against `composer serve` with the built frontend, covering create → vote → edit → admin close → final option → delete. It also asserts that no request leaves the origin and that the console shows no CSP violations.
   - Run it as its own CI job.
+  - Next: `npm --prefix frontend run e2e` builds, then runs Chromium against `php -S` (dev/router.php) on :8123 with a fresh `var/e2e.sqlite`. Tests use `test` from `e2e/fixtures.ts`: its guard fails on CSP violations, uncaught errors and requests to other origins, and `newPage()` opens a second browser. The poll test also checks that no request carries the key or any plaintext. The deploy waits for the job.
 - [ ] **4.2 Legal pages** 🧭 operator name, address, contact e-mail, hosting provider
   - Routes `/privacy` and `/imprint`, linked in the footer as in the old site ("Impressum", "Kontakt").
   - The privacy policy lists what is stored (ciphertext plus the metadata from CLAUDE.md) and the host's access logs and their retention. The wording should fit the Swiss nFADP and be available in German and English.

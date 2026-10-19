@@ -14,7 +14,7 @@ TimeLion ([timelion.ch](https://timelion.ch)) is a privacy-focused meeting sched
 | Frontend      | Svelte 5 (runes), TypeScript, Vite 8, vite-plugin-singlefile                   | builds **one** self-contained `public/index.html`        |
 | Crypto        | WebCrypto, AES-GCM 256                                                         | no crypto libraries                                      |
 | Dates         | `Intl.DateTimeFormat`                                                          | no date libraries                                        |
-| Quality       | PHPUnit 12, PHPStan level max, PHP-CS-Fixer (PER-CS, tabs); Vitest, svelte-check, tsc, Prettier |                                         |
+| Quality       | PHPUnit 12, PHPStan level max, PHP-CS-Fixer (PER-CS, tabs); Vitest, svelte-check, tsc, Prettier; Playwright (end-to-end) |                |
 | CI/CD         | GitHub Actions; deploys over FTP with TLS (lftp) to a shared webspace          | `.github/workflows/ci.yml`                               |
 
 The hosting target is an ordinary shared webspace: PHP, MySQL, Apache with `.htaccess`, and FTP. There is no SSH or shell, no Node on the server, no long-running processes and no root access. Anything that needs more than that is out of scope. Cron may be missing too, so expired data is purged after about 2% of API requests (`PurgeMiddleware`); where the host offers cron, `php bin/purge.php` can run as well, but nothing depends on it.
@@ -71,7 +71,7 @@ rate_limits (bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)
 
 ```
 .htaccess                   the document root is the app root: rewrites every request into public/
-.github/workflows/ci.yml    CI (PHP 8.3–8.5 on SQLite, PHP 8.3 on MariaDB, frontend) and deploy (main → FTP with TLS)
+.github/workflows/ci.yml    CI (PHP 8.3–8.5 on SQLite, PHP 8.3 on MariaDB, frontend, end-to-end) and deploy (main → FTP with TLS)
 .github/scripts/            deploy-ftp.sh: upload over FTP, then migrations via one-time token
 bin/migrate.php             apply migrations; --status lists them
 bin/purge.php               delete expired data (optional cron job; requests also purge, see Maintenance/)
@@ -79,6 +79,7 @@ config.example.php          template for config.php (gitignored, lives only on t
 dev/router.php              router for `php -S`; mirrors .htaccess, including the CSP
 docs/api.md                 API reference: update it with every endpoint change
 frontend/
+  e2e/                      Playwright end-to-end tests; fixtures.ts (the guard), server.mjs + config.php (test server)
   htaccess.template         → public/.htaccess (CSP placeholders filled at build time)
   scripts/build-public.mjs  copies dist/index.html to public/, computes the CSP hashes (logic in csp.mjs)
   src/App.svelte            route switch
@@ -130,6 +131,7 @@ npm --prefix frontend run build
 | `composer check`                         | PHP code style, PHPStan and PHPUnit                                           |
 | `composer cs:fix`                        | Fix PHP code style                                                            |
 | `npm --prefix frontend run verify`       | Prettier check, svelte-check + tsc, Vitest, build                             |
+| `npm --prefix frontend run e2e`          | Build, then Playwright on :8123 with a fresh SQLite database (`var/e2e.sqlite`); once before: `npx --prefix frontend playwright install chromium` |
 | `npm --prefix frontend run format`       | Format the frontend code                                                      |
 | `php bin/migrate.php [--status]`         | Apply or list migrations                                                      |
 | `php bin/purge.php`                      | Delete expired polls now (optional cron job, e.g. hourly)                     |
@@ -159,6 +161,7 @@ npm --prefix frontend run build
 - API calls go only through `src/lib/api.ts`; pass tokens with the `token` option. localStorage goes only through `src/lib/storage.ts`, which never throws. Treat everything stored there as optional.
 - Components handle poll data through `src/lib/polls.ts`, which encrypts before sending and validates after decrypting (`model.ts`), not through `crypto.ts` or the poll endpoints of `api.ts`. Links are built and parsed in `links.ts`; the polls saved in this browser (keys and tokens) go through `deviceStore.ts`.
 - Prettier formats everything (tabs, single quotes, 120-character lines).
+- End-to-end tests (`e2e/*.spec.ts`) import `test` and `expect` from `e2e/fixtures.ts`. Its guard fails a test on a CSP violation, an uncaught error or a request to another origin (which it also blocks); `newPage()` opens another person's browser with its own storage. Use roles and labels from `en.json` as selectors (the tests run in `en-GB`).
 
 ## Database conventions
 
@@ -188,9 +191,9 @@ All requests go under `/api`, with JSON in and out; request bodies need `Content
 A change is done when:
 
 1. `composer check` and `npm --prefix frontend run verify` pass.
-2. New behaviour has tests: PHPUnit HTTP tests for endpoints, Vitest for TypeScript logic.
+2. New behaviour has tests: PHPUnit HTTP tests for endpoints, Vitest for TypeScript logic, and Playwright (`frontend/e2e/`) for new user flows.
 3. The docs are updated: `docs/api.md` for API changes, this file when conventions or architecture change, and the checkbox in `roadmap.md`.
-4. For UI changes: you built the frontend, used it via `composer serve`, and the browser console shows **no CSP violations**. Headless check on macOS (no output means no violation):
+4. For UI changes: `npm --prefix frontend run e2e` passes (it fails on **CSP violations** and requests to other origins), and you used the change via `composer serve`. For a page the end-to-end tests don't open, check the console yourself; headless on macOS (no output means no violation):
 
    ```bash
    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --enable-logging=stderr --v=0 \
