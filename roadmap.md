@@ -172,6 +172,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [ ] **3.4 Poll page: viewing** (route `/p/:id`, 32-hex IDs only)
   - Load and decrypt the poll. Show the title, description and location, and an options × participants table with yes/maybe counts and the best option highlighted.
   - Error states: the link has no key; decryption fails ("link incomplete or wrong"); not found or expired; network error.
+  - Split, because it is over 400 lines:
+    - [ ] **3.4a Loading and error states**: the route loads and decrypts the poll, saves it to the device store, shows the title, description, location and status, and the four error states.
+    - [ ] **3.4b Results table**: `lib/results.ts` (tallies, best option) and the options × participants table with totals and comments.
 - [ ] **3.5 Voting**
   - Add a response (name plus yes/maybe/no per option, with maybe only if allowed), and edit or delete your own responses using the edit tokens from the device store. Closed polls are read-only.
 - [ ] **3.6 Admin panel** (visible when the fragment contains an admin token)
