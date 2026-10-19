@@ -29,5 +29,7 @@
 	"error.tooLarge": "The poll is too large. Shorten the texts or remove some dates.",
 	"error.invalidExpiry": "The expiry date was not accepted. Pick an earlier date.",
 	"error.unreadable": "The link is incomplete or wrong: the key in it doesn't decrypt the poll.",
-	"error.generic": "Something went wrong. Please try again."
+	"error.generic": "Something went wrong. Please try again.",
+	"calendar.previousMonth": "Previous month",
+	"calendar.nextMonth": "Next month"
 }

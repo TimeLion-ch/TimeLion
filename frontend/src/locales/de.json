@@ -29,5 +29,7 @@
 	"error.tooLarge": "Die Umfrage ist zu gross. Kürze die Texte oder entferne Termine.",
 	"error.invalidExpiry": "Das Ablaufdatum wurde nicht akzeptiert. Wähle ein früheres Datum.",
 	"error.unreadable": "Der Link ist unvollständig oder falsch: Mit dem Schlüssel darin lässt sich die Umfrage nicht entschlüsseln.",
-	"error.generic": "Etwas ist schiefgelaufen. Versuche es nochmals."
+	"error.generic": "Etwas ist schiefgelaufen. Versuche es nochmals.",
+	"calendar.previousMonth": "Vorheriger Monat",
+	"calendar.nextMonth": "Nächster Monat"
 }
