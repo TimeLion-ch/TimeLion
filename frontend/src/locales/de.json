@@ -158,5 +158,13 @@
 	"admin.deleted": "Die Umfrage wurde gelöscht.",
 	"error.forbidden": "Der Admin-Link ist ungültig. Prüfe, ob du den ganzen Link kopiert hast.",
 	"poll.deletedTitle": "Umfrage gelöscht",
-	"poll.deletedText": "Die Umfrage und alle Antworten wurden endgültig gelöscht. Sie wurde auch aus diesem Browser entfernt."
+	"poll.deletedText": "Die Umfrage und alle Antworten wurden endgültig gelöscht. Sie wurde auch aus diesem Browser entfernt.",
+	"admin.edit": "Umfrage bearbeiten",
+	"admin.editHint": "Titel, Beschreibung, Ort, Termine, Zeitzone und Ablaufdatum ändern.",
+	"edit.title": "Umfrage bearbeiten",
+	"edit.warningTitle": "Stimmen gehen verloren",
+	"edit.warning": "Du entfernst Termine, für die schon abgestimmt wurde ({count}). Die Stimmen dafür werden gelöscht:",
+	"edit.saveAnyway": "Trotzdem speichern",
+	"edit.back": "Zurück zum Formular",
+	"edit.saved": "Die Änderungen an der Umfrage sind gespeichert."
 }

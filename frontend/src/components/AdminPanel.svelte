@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
 	import { errorMessage } from '../lib/errors';
 	import { optionLabel } from '../lib/format';
 	import { i18n, t, type MessageKey } from '../lib/i18n.svelte';
@@ -20,11 +19,11 @@
 		onchange: () => Promise<void>;
 		/** After the poll was deleted. */
 		ondeleted: () => void;
-		/** Extra actions, e.g. editing the poll. */
-		children?: Snippet;
+		/** Opens the poll form. */
+		onedit: () => void;
 	};
 
-	let { id, pollKey, adminToken, loaded, onchange, ondeleted, children }: Props = $props();
+	let { id, pollKey, adminToken, loaded, onchange, ondeleted, onedit }: Props = $props();
 
 	const uid = $props.id();
 	const closed = $derived(loaded.meta.closedAt !== null);
@@ -112,7 +111,14 @@
 			<p>{closed ? t('admin.statusClosed') : t('admin.statusOpen')}</p>
 			<div class="row">
 				<Button {busy} onclick={toggleClosed}>{closed ? t('admin.reopen') : t('admin.close')}</Button>
-				{@render children?.()}
+			</div>
+		</div>
+
+		<div class="group">
+			<h3>{t('admin.edit')}</h3>
+			<p class="muted">{t('admin.editHint')}</p>
+			<div>
+				<Button onclick={onedit}>{t('admin.edit')}</Button>
 			</div>
 		</div>
 

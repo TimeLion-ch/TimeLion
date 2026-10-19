@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { serverLimits } from './api';
-import { parsePoll } from './model';
+import { parsePoll, type Poll } from './model';
 import {
 	buildPoll,
 	copySlots,
 	defaultExpiryDate,
+	draftFromPoll,
+	editedPoll,
 	emptyDraft,
 	endsNextDay,
 	expiresAt,
 	maxExpiryDate,
 	newOptionId,
 	optionCount,
+	removedOptions,
 	slotKey,
 	toggleDay,
 	validateDraft,
@@ -55,6 +58,18 @@ describe('time slots', () => {
 			[{ start: '18:00', end: '22:00' }],
 		]);
 		expect(days[1]?.slots[0]).not.toBe(days[0]?.slots[0]);
+	});
+
+	it('copies slots as new options, without the IDs of the original ones', () => {
+		const days = copySlots(
+			[
+				{ date: '2026-11-03', slots: [{ id: 'aaaaaaaa', start: '18:00', end: '' }] },
+				{ date: '2026-11-04', slots: [{ id: 'bbbbbbbb', start: '09:00', end: '' }] },
+			],
+			'2026-11-03',
+		);
+		expect(days[0]?.slots).toEqual([{ id: 'aaaaaaaa', start: '18:00', end: '' }]);
+		expect(days[1]?.slots).toEqual([{ start: '18:00', end: '' }]);
 	});
 
 	it('counts a day without slots as one option', () => {
@@ -223,5 +238,73 @@ describe('buildPoll', () => {
 describe('newOptionId', () => {
 	it('returns 8 lowercase hex characters', () => {
 		expect(newOptionId()).toMatch(/^[0-9a-f]{8}$/);
+	});
+});
+
+describe('editing a poll', () => {
+	const poll: Poll = {
+		v: 1,
+		title: 'Grillabend',
+		description: 'Mit Salat',
+		timezone: 'Europe/Zurich',
+		options: [
+			{ id: 'aaaaaaaa', start: '2026-11-03' },
+			{ id: 'bbbbbbbb', start: '2026-11-04T18:00', end: '2026-11-04T22:00' },
+			{ id: 'cccccccc', start: '2026-11-04T22:00', end: '2026-11-05T01:00' },
+			{ id: 'dddddddd', start: '2026-11-06T09:00' },
+		],
+		allowMaybe: false,
+		finalOptionId: 'bbbbbbbb',
+	};
+	// The end of 2026-12-31 in Zurich.
+	const expires = Date.parse('2026-12-31T23:00:00Z') / 1000;
+
+	it('turns a poll into a draft and back without changes', () => {
+		const draft = draftFromPoll(poll, expires);
+		expect(draft).toMatchObject({
+			title: 'Grillabend',
+			description: 'Mit Salat',
+			location: '',
+			allowMaybe: false,
+			expiryDate: '2026-12-31',
+		});
+		expect(draft.days).toEqual([
+			{ date: '2026-11-03', slots: [], id: 'aaaaaaaa' },
+			{
+				date: '2026-11-04',
+				slots: [
+					{ id: 'bbbbbbbb', start: '18:00', end: '22:00' },
+					{ id: 'cccccccc', start: '22:00', end: '01:00' },
+				],
+			},
+			{ date: '2026-11-06', slots: [{ id: 'dddddddd', start: '09:00', end: '' }] },
+		]);
+		expect(editedPoll(poll, draft)).toEqual(poll);
+	});
+
+	it('keeps the IDs of changed options and gives new options new IDs', () => {
+		const draft = draftFromPoll(poll, expires);
+		draft.days[1]!.slots[0]!.end = '23:00';
+		draft.days = toggleDay(draft.days, '2026-11-07');
+		const edited = editedPoll(poll, draft, () => 'eeeeeeee');
+		expect(edited.options.find((option) => option.id === 'bbbbbbbb')?.end).toBe('2026-11-04T23:00');
+		expect(edited.options.at(-1)).toEqual({ id: 'eeeeeeee', start: '2026-11-07' });
+		expect(removedOptions(poll, edited)).toEqual([]);
+	});
+
+	it('reports removed options and drops a removed final option', () => {
+		const draft = draftFromPoll(poll, expires);
+		draft.days[1]!.slots.splice(0, 1);
+		draft.days = toggleDay(draft.days, '2026-11-03');
+		const edited = editedPoll(poll, draft);
+		expect(removedOptions(poll, edited).map((option) => option.id)).toEqual(['aaaaaaaa', 'bbbbbbbb']);
+		expect(edited).not.toHaveProperty('finalOptionId');
+	});
+
+	it('never reuses an ID for a new option', () => {
+		const draft = draftFromPoll(poll, expires);
+		draft.days = toggleDay(draft.days, '2026-11-07');
+		const ids = ['aaaaaaaa', 'ffffffff'];
+		expect(editedPoll(poll, draft, () => ids.shift()!).options.at(-1)?.id).toBe('ffffffff');
 	});
 });

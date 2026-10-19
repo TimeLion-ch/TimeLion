@@ -183,11 +183,12 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
   - Split, because it is over 400 lines:
     - [x] **3.5a Adding a response**: `lib/responseDraft.ts`, the voting form and the panel that sends it and saves the edit token to the device store. — done 2026-10-19
     - [x] **3.5b Editing and deleting your responses**: the list of this browser's responses with edit and delete (`ConfirmButton`), and "you" in the table. — done 2026-10-19
-- [ ] **3.6 Admin panel** (visible when the fragment contains an admin token)
+- [x] **3.6 Admin panel** (visible when the fragment contains an admin token) — done 2026-10-19
   - Edit texts and options (warn that removing an option drops its votes), close and reopen, choose the final option, delete individual responses, and delete the poll (with confirmation).
+  - Next: `draftFromPoll(poll, expiresAt)` and `editedPoll(previous, draft)` keep option IDs; `removedOptions` finds what an edit drops. The admin panel is a disclosure (collapsed by default) below the poll's notices. Local UI tests can hit the hourly rate limits (`DELETE FROM rate_limits` in the dev database).
   - Split, because it is over 400 lines:
     - [x] **3.6a Admin actions**: close and reopen, choose the final option, delete individual (also unreadable) responses, delete the poll, and both links. — done 2026-10-19
-    - [ ] **3.6b Editing the poll**: the poll form for an existing poll, keeping option IDs (and so the votes) of unchanged options, with a warning before options with votes are removed.
+    - [x] **3.6b Editing the poll**: the poll form for an existing poll, keeping option IDs (and so the votes) of unchanged options, with a warning before options with votes are removed. — done 2026-10-19
 - [ ] **3.7 Responsive and accessible results table**
   - Mobile layout (options as a list showing your own vote and the totals), keyboard navigation, screen-reader labels, and enough contrast in both themes.
 - [ ] **3.8 My polls** (route `/my`, plus a "Meine Umfragen / My polls" link in the header, as in the old navbar)

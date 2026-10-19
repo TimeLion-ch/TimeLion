@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AdminPanel from '../components/AdminPanel.svelte';
 	import Button from '../components/Button.svelte';
+	import EditPoll from '../components/EditPoll.svelte';
 	import Notice from '../components/Notice.svelte';
 	import ResultsTable from '../components/ResultsTable.svelte';
 	import ShareScreen from '../components/ShareScreen.svelte';
@@ -25,6 +26,8 @@
 	let problem = $state<LoadProblem | null>(fragment === null ? 'noKey' : null);
 	let loading = $state(false);
 	let deleted = $state(false);
+	let editing = $state(false);
+	let edited = $state(false);
 	/** The responses this browser can edit. */
 	let own = $state<ResponseRef[]>([]);
 
@@ -50,6 +53,15 @@
 			problem = loadProblem(error);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function finishEdit(saved: boolean) {
+		editing = false;
+		edited = saved;
+		window.scrollTo(0, 0);
+		if (saved) {
+			await load();
 		}
 	}
 
@@ -92,6 +104,8 @@
 	</section>
 {:else if loaded === null || poll === undefined}
 	<p class="loading" role="status">{t('poll.loading')}</p>
+{:else if editing && fragment?.adminToken !== undefined}
+	<EditPoll {id} pollKey={fragment.key} adminToken={fragment.adminToken} {loaded} ondone={finishEdit} />
 {:else}
 	<article class="poll">
 		<header>
@@ -121,6 +135,9 @@
 			</p>
 		</header>
 
+		{#if edited}
+			<Notice kind="success" role="status"><p>{t('edit.saved')}</p></Notice>
+		{/if}
 		{#if finalOption !== undefined}
 			<Notice kind="success" title={t('poll.finalTitle')}>
 				<p>{optionLabel(finalOption, i18n.locale, 'long')}</p>
@@ -145,6 +162,11 @@
 				{loaded}
 				onchange={load}
 				ondeleted={onDeleted}
+				onedit={() => {
+					edited = false;
+					editing = true;
+					window.scrollTo(0, 0);
+				}}
 			/>
 		{/if}
 
