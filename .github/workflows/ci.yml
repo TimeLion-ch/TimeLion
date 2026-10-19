@@ -22,13 +22,39 @@ env:
 
 jobs:
   backend:
-    name: Backend (PHP ${{ matrix.php }})
+    name: Backend (PHP ${{ matrix.php }}${{ matrix.database == 'mariadb' && ', MariaDB' || '' }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         php: ['8.3', '8.4', '8.5']
+        database: [sqlite]
+        # Production runs MySQL/MariaDB: run the suite there once, on the lowest supported PHP version.
+        include:
+          - php: '8.3'
+            database: mariadb
+    services:
+      mariadb:
+        # An empty image skips the service, so only the MariaDB entry starts it.
+        image: ${{ matrix.database == 'mariadb' && 'mariadb:11' || '' }}
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: timelion_test
+          MARIADB_USER: timelion
+          MARIADB_PASSWORD: timelion
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      # Empty means in-memory SQLite (tests/TestDatabase.php).
+      TIMELION_TEST_DSN: ${{ matrix.database == 'mariadb' && 'mysql:host=127.0.0.1;port=3306;dbname=timelion_test;charset=utf8mb4' || '' }}
+      TIMELION_TEST_DB_USER: timelion
+      TIMELION_TEST_DB_PASSWORD: timelion
     steps:
       - uses: actions/checkout@v7
 
@@ -56,11 +82,11 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Code style
-        if: matrix.php == env.PHP_VERSION
+        if: matrix.php == env.PHP_VERSION && matrix.database == 'sqlite'
         run: composer cs
 
       - name: Static analysis
-        if: matrix.php == env.PHP_VERSION
+        if: matrix.php == env.PHP_VERSION && matrix.database == 'sqlite'
         run: composer stan
 
       - name: Tests

@@ -10,6 +10,7 @@ use RuntimeException;
 use TimeLion\Config;
 use TimeLion\Database\ConnectionFactory;
 use TimeLion\Database\Migrator;
+use TimeLion\Tests\TestDatabase;
 
 final class MigratorTest extends TestCase
 {
@@ -19,7 +20,12 @@ final class MigratorTest extends TestCase
 
 	protected function setUp(): void
 	{
-		$this->pdo = ConnectionFactory::create(new Config('prod', 'sqlite::memory:', null, null, str_repeat('s', 32)));
+		$this->pdo = TestDatabase::empty();
+	}
+
+	protected function tearDown(): void
+	{
+		unset($this->pdo);
 	}
 
 	public function testAppliesPendingMigrationsInOrder(): void
@@ -54,6 +60,8 @@ final class MigratorTest extends TestCase
 
 	public function testFailedSqliteMigrationIsRolledBack(): void
 	{
+		// MySQL commits DDL implicitly, so this is about SQLite whichever database the other tests use.
+		$this->pdo = ConnectionFactory::create(new Config('prod', 'sqlite::memory:', null, null, str_repeat('s', 32)));
 		$directory = sys_get_temp_dir() . '/timelion-migrations-' . bin2hex(random_bytes(4));
 		mkdir($directory);
 		file_put_contents($directory . '/0001_broken.sql', "CREATE TABLE ok_table (id INTEGER);\nTHIS IS NOT SQL;\n");

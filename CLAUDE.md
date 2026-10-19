@@ -71,7 +71,7 @@ rate_limits (bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)
 
 ```
 .htaccess                   the document root is the app root: rewrites every request into public/
-.github/workflows/ci.yml    CI (PHP 8.3–8.5, frontend) and deploy (main → FTP with TLS)
+.github/workflows/ci.yml    CI (PHP 8.3–8.5 on SQLite, PHP 8.3 on MariaDB, frontend) and deploy (main → FTP with TLS)
 .github/scripts/            deploy-ftp.sh: upload over FTP, then migrations via one-time token
 bin/migrate.php             apply migrations; --status lists them
 config.example.php          template for config.php (gitignored, lives only on the server)
@@ -98,7 +98,7 @@ src/                        PHP, namespace TimeLion\
   Deploy/                   DeployToken (one-time token for the FTP deploy's migration call)
   Http/                     ApiError, BearerToken, ErrorHandler, Json, Middleware/, Action/
   Security/                 TokenHash
-tests/                      PHPUnit; AppTestCase boots the app on in-memory SQLite
+tests/                      PHPUnit; AppTestCase boots the app on a freshly migrated TestDatabase
 var/                        runtime data (SQLite database, caches), gitignored
 ```
 
@@ -158,6 +158,14 @@ npm --prefix frontend run build
 - MySQL's default collations are case-insensitive, so IDs and hashes are lowercase hex. Never rely on case-sensitive comparison in SQL.
 - Use prepared statements only; never interpolate values into SQL.
 - Use foreign keys with `ON DELETE CASCADE`, so that deleting a poll deletes everything that belongs to it.
+- Tests run on in-memory SQLite by default. `tests/TestDatabase.php` reads `TIMELION_TEST_DSN`, `TIMELION_TEST_DB_USER` and `TIMELION_TEST_DB_PASSWORD` to run them against MySQL/MariaDB instead, as one CI entry does. It drops every table before each test, so point it at a dedicated, empty database:
+
+  ```bash
+  docker run -d --name timelion-test-mariadb -p 127.0.0.1:3307:3306 -e MARIADB_ROOT_PASSWORD=root \
+    -e MARIADB_DATABASE=timelion_test -e MARIADB_USER=timelion -e MARIADB_PASSWORD=timelion mariadb:11
+  TIMELION_TEST_DSN='mysql:host=127.0.0.1;port=3307;dbname=timelion_test;charset=utf8mb4' \
+    TIMELION_TEST_DB_USER=timelion TIMELION_TEST_DB_PASSWORD=timelion composer test
+  ```
 
 ## API conventions
 

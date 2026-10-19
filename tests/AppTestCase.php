@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TimeLion\Tests;
 
 use DI\Container;
+use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Slim\App;
@@ -13,21 +14,31 @@ use TimeLion\Config;
 use TimeLion\Kernel;
 
 /**
- * Base class for HTTP-level tests: boots the real app against an in-memory SQLite database.
+ * Base class for HTTP-level tests: boots the real app against a freshly migrated test database (see TestDatabase).
  */
 abstract class AppTestCase extends TestCase
 {
 	/** @var App<Container> */
 	protected App $app;
 
+	protected PDO $pdo;
+
 	protected function setUp(): void
 	{
 		$this->app = Kernel::createApp(self::config());
+		$this->pdo = TestDatabase::migrated();
+		$this->app->getContainer()->set(PDO::class, $this->pdo);
+	}
+
+	protected function tearDown(): void
+	{
+		// PHPUnit keeps test case objects until the run ends; don't keep every app and connection alive with them.
+		unset($this->app, $this->pdo);
 	}
 
 	protected static function config(string $env = Config::ENV_PROD): Config
 	{
-		return new Config($env, 'sqlite::memory:', null, null, str_repeat('s', Config::MIN_SECRET_LENGTH));
+		return TestDatabase::config($env);
 	}
 
 	/**
