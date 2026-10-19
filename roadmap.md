@@ -229,8 +229,8 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
   - Next: LICENSE is the text from gnu.org. The footer's "Source code" link is how timelion.ch offers the source (section 13); the README tells self-hosters to point it to their version.
 - [x] **4.6 Logo license** — done 2026-10-19
   - The lion SVG comes from SVG Repo. Check its license, then add attribution or replace it.
-  - Result: it is ["Lion"](https://www.svgrepo.com/svg/484717/lion) (collection "SVG Vector", uploaded by SVG Repo), CC0 per its page (checked in the archived copy of 2025-07-11, as the live page blocks scripts). No attribution is needed; the source is noted in `Logo.svelte` and the README anyway. The favicon and `docs/logo_sm.png` are the same lion.
-  - Next: CC0 means anyone may use this lion too, so it can't become an exclusive trademark, and the CC0 label rests on SVG Repo's word alone. If TimeLion ever needs a protectable mark, commission its own logo.
+  - Result: it is ["Lion"](https://www.svgrepo.com/svg/484717/lion) (collection "SVG Vector", uploaded by SVG Repo), which its page publishes under SVG Repo's Public Domain license. An archived copy of 2025-07-11 still said CC0; neither needs attribution. The source is noted in `Logo.svelte` and the README anyway. The favicon and `docs/logo_sm.png` are the same lion.
+  - Next: public domain means anyone may use this lion too, so it can't become an exclusive trademark, and the license label rests on SVG Repo's word alone. If TimeLion ever needs a protectable mark, commission its own logo.
 - [x] **4.7 Brand font (optional)** — done 2026-10-19
   - The old site used Plus Jakarta Sans (OFL) from Google Fonts. If it's wanted, embed a Latin-subset WOFF2 as a data URI (which needs `font-src data:` in the CSP). Budget: at most 40 KiB.
   - Next: a variable subset (weights 400–800, Google's "latin" range, `tnum` for the tables) of 19 KiB adds 25 KiB to `index.html`. `src/assets/fonts/README.md` has the source and the commands. An end-to-end test checks that it loads under the CSP.
