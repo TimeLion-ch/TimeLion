@@ -130,9 +130,10 @@ Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
   - The validators return the typed value or `null`. They drop unknown fields and ignore votes for unknown options.
   - Done when: tests cover valid input and hostile input (huge strings, wrong types, `__proto__` keys, deeply nested values).
   - Next: the types are `Poll`, `PollOption` and `PollResponse` (not `Response`, which would shadow the DOM type); `parseResponse(value, poll)` needs the poll for its option IDs. An option's `start` is `YYYY-MM-DD` or a wall-clock `YYYY-MM-DDTHH:MM` in the poll's `timezone`, without offset; `end` has the same form and is later (for days: the inclusive last day). An unknown `finalOptionId` is dropped. `limits` has the field lengths (UTF-16 code units, like `maxlength`).
-- [ ] **2.3 Links** (`src/lib/links.ts`)
+- [x] **2.3 Links** (`src/lib/links.ts`) — done 2026-10-19
   - `participantLink(origin, id, key)`, `adminLink(origin, id, key, adminToken)` and `parseFragment(hash)`, which returns `{ key, adminToken?, edit?: { responseId, editToken } } | null`. The fragment uses `URLSearchParams` syntax.
   - Done when: tests cover round trips, garbage fragments, and missing or invalid keys.
+  - Next: `editLink(origin, id, key, responseId, editToken)` exists too, for 3.10. `parseFragment` returns null only for a missing or malformed key; a malformed admin token or edit part is left out. `KEY_PATTERN` (crypto.ts) now also rejects a non-canonical last character.
 - [ ] **2.4 Typed API client for the Phase 1 endpoints** (`src/lib/api.ts`). Depends on 1.5–1.8.
   - Add `api.createPoll`, `getPoll`, `updatePoll`, `deletePoll`, `createResponse`, `updateResponse` and `deleteResponse`, typed to match `docs/api.md`.
   - Done when: each has a test with mocked `fetch`.

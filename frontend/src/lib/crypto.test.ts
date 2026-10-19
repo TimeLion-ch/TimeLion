@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { encode } from './base64url';
+import { decode, encode } from './base64url';
 import {
 	DecryptionError,
 	decryptJson,
@@ -21,6 +21,14 @@ function flip(text: string, index: number): string {
 	return text.slice(0, index) + replacement + text.slice(index + 1);
 }
 
+function decodeOrNull(text: string): Uint8Array | null {
+	try {
+		return decode(text);
+	} catch {
+		return null;
+	}
+}
+
 /** Encrypts raw bytes the way encryptJson does, to test what decryptJson does with plaintext that isn't JSON. */
 async function encryptBytes(key: CryptoKey, plaintext: Uint8Array<ArrayBuffer>): Promise<string> {
 	const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -34,6 +42,13 @@ describe('keys', () => {
 		const exported = await exportKey(await generatePollKey());
 
 		expect(exported).toMatch(KEY_PATTERN);
+	});
+
+	it('accepts exactly the canonical 43-character encodings as KEY_PATTERN', () => {
+		for (const last of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_') {
+			const text = 'A'.repeat(42) + last;
+			expect(KEY_PATTERN.test(text), text).toBe(decodeOrNull(text) !== null);
+		}
 	});
 
 	it('generates a different key every time', async () => {

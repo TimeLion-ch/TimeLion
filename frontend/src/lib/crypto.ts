@@ -10,8 +10,11 @@ import { decode, encode } from './base64url';
 
 export type Kind = 'poll' | 'response';
 
-/** The exported key: 32 bytes as 43 base64url characters. It travels only in the URL fragment and localStorage. */
-export const KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+/**
+ * The exported key: 32 bytes as 43 base64url characters. The last character carries 2 unused bits, which must be
+ * zero. The key travels only in the URL fragment and localStorage.
+ */
+export const KEY_PATTERN = /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
 
 /** The same check as the backend (docs/api.md → Formats and limits). */
 export const ENVELOPE_PATTERN = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{24,}$/;
