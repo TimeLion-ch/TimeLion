@@ -195,8 +195,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [x] **3.8 My polls** (route `/my`, plus a "Meine Umfragen / My polls" link in the header, as in the old navbar) — done 2026-10-19
   - List the polls from the device store (decrypting titles lazily), with open, forget and forget all. Explain that this list exists only in this browser.
   - Next: only entries without a stored title are loaded, one after another, so the server doesn't see every poll of this browser at once. Below 25rem the header shows the logo without the name.
-- [ ] **3.9 Calendar export**
+- [x] **3.9 Calendar export** — done 2026-10-19
   - Download the final option as an `.ics` file (generated in the browser as a Blob, RFC 5545, with correct timezones), offered as an "Add to calendar" button on closed polls.
+  - Next: `buildIcs` writes times in UTC (no VTIMEZONE needed) and whole days as dates; the file never contains the poll's link. A Blob download needs no CSP change.
 - [ ] **3.10 Personal edit link**
   - After voting, offer a link (`#k=…&r={responseId}.{editToken}`) for editing the response from another device, and handle it on the poll page.
 

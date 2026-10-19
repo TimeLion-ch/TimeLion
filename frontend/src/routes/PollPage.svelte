@@ -9,9 +9,11 @@
 	import ShareScreen from '../components/ShareScreen.svelte';
 	import VotePanel from '../components/VotePanel.svelte';
 	import { deviceStore, type ResponseRef } from '../lib/deviceStore';
+	import { downloadText } from '../lib/download';
 	import { loadProblem, type LoadProblem } from '../lib/errors';
 	import { formatTimestamp, optionLabel } from '../lib/format';
 	import { i18n, t } from '../lib/i18n.svelte';
+	import { buildIcs, icsFilename } from '../lib/ics';
 	import { parseFragment } from '../lib/links';
 	import { loadPoll, type LoadedPoll } from '../lib/polls';
 	import { hasTimes } from '../lib/results';
@@ -56,6 +58,14 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function addToCalendar() {
+		if (poll === undefined || finalOption === undefined) {
+			return;
+		}
+		const ics = buildIcs(poll, finalOption, { pollId: id, host: location.hostname, now: Date.now() });
+		downloadText(icsFilename(poll.title), ics, 'text/calendar;charset=utf-8');
 	}
 
 	async function finishEdit(saved: boolean) {
@@ -143,6 +153,12 @@
 		{#if finalOption !== undefined}
 			<Notice kind="success" title={t('poll.finalTitle')}>
 				<p>{optionLabel(finalOption, i18n.locale, 'long')}</p>
+				{#if loaded.meta.closedAt !== null}
+					<div class="calendar">
+						<Button variant="primary" onclick={addToCalendar}>{t('poll.addToCalendar')}</Button>
+						<p class="hint">{t('poll.addToCalendarHint')}</p>
+					</div>
+				{/if}
 			</Notice>
 		{/if}
 		{#if loaded.meta.closedAt !== null}
@@ -235,6 +251,19 @@
 	.description {
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
+	}
+
+	.calendar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2) var(--space-3);
+		margin-top: var(--space-3);
+	}
+
+	.calendar .hint {
+		margin: 0;
+		font-size: 0.875rem;
 	}
 
 	.meta {

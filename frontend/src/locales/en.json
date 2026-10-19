@@ -187,5 +187,7 @@
 	"my.forgetQuestion": "Remove from this browser? Without the link you can't get back to the poll.",
 	"my.forgetAll": "Remove all",
 	"my.forgetAllQuestion": "Remove all polls from this browser?",
-	"my.forgotten": "Removed from this browser."
+	"my.forgotten": "Removed from this browser.",
+	"poll.addToCalendar": "Add to calendar",
+	"poll.addToCalendarHint": "Downloads an .ics file for your calendar. It contains the title, description and location, but not the link to the poll."
 }
