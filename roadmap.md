@@ -92,11 +92,12 @@ Tasks:
   - Errors: 401 for a missing or malformed token, 403 for a wrong token, 404 for an unknown or expired poll, 400 for an empty patch.
   - Done when: every status code has a test, and tokens are compared via `TokenHash::matches`.
   - Next: `Http\PollAccess` does the lookup and token check in the documented order (401 → 404 → 403); the body comes after. `AppTestCase` has `newPoll()` and `bearer()`.
-- [ ] **1.8 Responses: `POST /api/polls/{id}/responses`, `PUT` and `DELETE /api/polls/{id}/responses/{responseId}`**
+- [x] **1.8 Responses: `POST /api/polls/{id}/responses`, `PUT` and `DELETE /api/polls/{id}/responses/{responseId}`** — done 2026-10-19
   - `POST` body `{ "ciphertext" }` returns **201** `{ "id", "editToken", "createdAt" }`. It returns **409** `poll_closed` if the poll is closed, and **409** `too_many_responses` once the limit is reached.
   - `PUT` requires the response's edit token. Body `{ "ciphertext" }` returns **200** `{ "id", "updatedAt" }`, or **409** `poll_closed`.
   - `DELETE` returns **204** and accepts either the response's edit token **or** the poll's admin token. It is allowed even when the poll is closed.
   - Done when: tests cover every path, including a response ID that belongs to a different poll (404).
+  - Next: the response limit is count-then-insert, not atomic, so concurrent requests can pass it by a few (documented). Every write endpoint now exists for 1.10 to rate-limit.
 - [ ] **1.9 Purging expired polls**
   - Add `src/Maintenance/Purger.php`, which deletes expired polls (cascading) and stale rate-limit rows (after 1.10). It runs with about 2% probability per API request (middleware, after the handler) and via `bin/purge.php` for hosts that offer cron.
   - Done when: tests with `FrozenClock` pass, and README and CLAUDE.md mention the optional cron job.

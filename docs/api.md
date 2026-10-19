@@ -198,3 +198,68 @@ Deletes a poll and all its responses, immediately and for good. Requires `Author
 | 401    | `unauthorized` | Token missing or malformed                   |
 | 403    | `forbidden`    | Token is not this poll's admin token         |
 | 404    | `not_found`    | The poll ID is malformed, unknown or expired |
+
+### `POST /api/polls/{id}/responses`
+
+Adds a response. No token is needed: anyone with the link can answer. The client encrypts the response with the poll key; the server generates the response ID and an edit token, and stores only the token's SHA-256 hash.
+
+**Request**
+
+```json
+{ "ciphertext": "v1.…" }
+```
+
+`ciphertext`: ciphertext envelope, at most 16 KiB.
+
+**201**
+
+```json
+{ "id": "9c1d…(32 hex)", "editToken": "…(43 base64url)", "createdAt": 1800000100 }
+```
+
+`editToken` appears only in this response. The client keeps it (device store, personal edit link) to change or delete the response later.
+
+| Status | `code`                   | When                                                     |
+| ------ | ------------------------ | -------------------------------------------------------- |
+| 400    | `invalid_ciphertext`, `ciphertext_too_large`, `invalid_json` | Invalid body         |
+| 404    | `not_found`              | The poll ID is malformed, unknown or expired             |
+| 409    | `poll_closed`            | The poll is closed                                       |
+| 409    | `too_many_responses`     | The poll already has 500 responses                       |
+| 413    | `payload_too_large`      | Body is larger than 80 KiB                               |
+| 415    | `unsupported_media_type` | Body is not `application/json`                           |
+
+The limit check and the insert are not atomic: concurrent requests can take a poll a few responses past 500.
+
+### `PUT /api/polls/{id}/responses/{responseId}`
+
+Replaces a response. Requires `Authorization: Bearer <editToken>` of this response; the admin token is not accepted.
+
+**Request:** `{ "ciphertext": "v1.…" }`, at most 16 KiB.
+
+**200**
+
+```json
+{ "id": "9c1d…", "updatedAt": 1800000200 }
+```
+
+| Status | `code`                   | When                                                                     |
+| ------ | ------------------------ | ------------------------------------------------------------------------ |
+| 400    | `invalid_ciphertext`, `ciphertext_too_large`, `invalid_json` | Invalid body                         |
+| 401    | `unauthorized`           | Token missing or malformed                                               |
+| 403    | `forbidden`              | Token is not this response's edit token                                  |
+| 404    | `not_found`              | An ID is malformed, the poll is unknown or expired, or the response does not exist in this poll |
+| 409    | `poll_closed`            | The poll is closed                                                       |
+| 413    | `payload_too_large`      | Body is larger than 80 KiB                                               |
+| 415    | `unsupported_media_type` | Body is not `application/json`                                           |
+
+### `DELETE /api/polls/{id}/responses/{responseId}`
+
+Deletes a response. Requires `Authorization: Bearer <token>` with either the response's edit token or the poll's admin token. Allowed on closed polls. No request body.
+
+**204**, with no body.
+
+| Status | `code`         | When                                                                     |
+| ------ | -------------- | ------------------------------------------------------------------------ |
+| 401    | `unauthorized` | Token missing or malformed                                               |
+| 403    | `forbidden`    | Token is neither this response's edit token nor the poll's admin token   |
+| 404    | `not_found`    | An ID is malformed, the poll is unknown or expired, or the response does not exist in this poll |

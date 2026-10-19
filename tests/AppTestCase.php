@@ -64,6 +64,22 @@ abstract class AppTestCase extends TestCase
 	}
 
 	/**
+	 * Adds a response through the API.
+	 *
+	 * @return array{id: string, editToken: string}
+	 */
+	protected function newResponse(string $pollId, ?string $ciphertext = null): array
+	{
+		$response = $this->requestJson('POST', '/api/polls/' . $pollId . '/responses', ['ciphertext' => $ciphertext ?? Fixtures::ciphertext('R')]);
+		self::assertSame(201, $response->getStatusCode());
+		$data = self::json($response);
+		self::assertIsString($data['id'] ?? null);
+		self::assertIsString($data['editToken'] ?? null);
+
+		return ['id' => $data['id'], 'editToken' => $data['editToken']];
+	}
+
+	/**
 	 * @return array{Authorization: string}
 	 */
 	protected static function bearer(string $token): array
