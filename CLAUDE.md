@@ -2,7 +2,7 @@
 
 TimeLion ([timelion.ch](https://timelion.ch)) is a privacy-focused meeting scheduler. Someone creates a poll with date and time options and shares the link. Participants answer yes, maybe or no for each option, and the group picks a date. Polls are **end-to-end encrypted in the browser**, so the server only ever stores ciphertext.
 
-**Status:** the foundation is done: Slim API skeleton, single-file Svelte frontend, CI/CD. Feature work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
+**Status:** the API, the frontend logic and the UI are done (roadmap Phases 0–3): polls can be created, answered, edited, closed and deleted. Further work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
 
 ## Stack
 
@@ -82,10 +82,12 @@ frontend/
   htaccess.template         → public/.htaccess (CSP placeholders filled at build time)
   scripts/build-public.mjs  copies dist/index.html to public/, computes the CSP hashes (logic in csp.mjs)
   src/App.svelte            route switch
-  src/components/           shared UI components
-  src/routes/               one component per page
-  src/lib/                  logic: api.ts, base64url.ts, crypto.ts, deviceStore.ts, i18n.ts + i18n.svelte.ts,
-                            links.ts, model.ts, polls.ts, routes.ts + router.svelte.ts, storage.ts
+  src/components/           UI components: building blocks (Button, TextField, Notice, ConfirmButton, CopyField,
+                            Calendar) and the parts of the pages (PollForm, ResultsTable, VotePanel, AdminPanel, …)
+  src/routes/               one component per page: Home, CreatePoll, PollPage, MyPolls, NotFound
+  src/lib/                  logic: api.ts, base64url.ts, crypto.ts, dates.ts, deviceStore.ts, download.ts, errors.ts,
+                            format.ts, i18n.ts + i18n.svelte.ts, ics.ts, links.ts, model.ts, pollDraft.ts, polls.ts,
+                            responseDraft.ts, results.ts, routes.ts + router.svelte.ts, storage.ts
   src/locales/{de,en}.json  translations (de.json is the source of truth for keys)
 migrations/                 NNNN_description.sql
 public/                     web root on the server
@@ -150,8 +152,10 @@ npm --prefix frontend run build
 - Logic goes into plain `.ts` modules in `src/lib/` with Vitest tests next to them (`*.test.ts`). Reactive state lives in `*.svelte.ts` modules. Keep components thin.
 - **No Node APIs in browser code** (`Buffer`, `node:*`). `tsconfig.json` deliberately has no Node types. Tests run in Node, so a Node API would pass the tests and then fail in the browser. Build scripts are covered by `tsconfig.node.json`.
 - Routes are real paths (History API, `routes.ts` + `router.svelte.ts`), because the fragment is reserved for keys. Internal links use `<a href="/…" use:link>`. Add routes in `routes.ts` with tests and render them in `App.svelte`.
+- **Never use `#` anchors** for jumping within a page: the fragment holds the key. `router.hash` is reactive, and `App.svelte` re-creates the poll page for every ID and fragment. Per-entry UI state that must survive a reload (the share screen after creating a poll) goes into history state (`navigate(path, { state })`, `router.state`).
+- Forms edit a draft (`pollDraft.ts`, `responseDraft.ts`) that the lib turns into a document; validation errors show after the first submit and then follow every change. Irreversible actions go through `ConfirmButton`. Dates are `YYYY-MM-DD` strings with UTC arithmetic (`dates.ts`); option times are wall-clock times in the poll's timezone, formatted with `format.ts`.
 - All UI text goes through `t('key')` from `i18n.svelte.ts`. Add each key to every file in `src/locales/`; a test enforces identical keys and placeholders. German copy uses Swiss spelling (ss, never ß) and the informal "du".
-- **CSS:** global tokens live in `src/app.css`; components use scoped `<style>` blocks. **No `style="…"` attributes in markup**, because the hash-based CSP blocks them. Use classes, or `style:` directives where something must be dynamic. SVG colours use presentation attributes (`fill="…"`).
+- **CSS:** global tokens live in `src/app.css`; components use scoped `<style>` blocks. **No `style="…"` attributes in markup**, because the hash-based CSP blocks them. Use classes, or `style:` directives where something must be dynamic. SVG colours use presentation attributes (`fill="…"`). The colour tokens meet WCAG AA in both themes (text 4.5:1, focus ring and control borders 3:1); keep it that way. The layout must work at 360 px; text from polls gets `overflow-wrap: anywhere`. Absolutely positioned content (such as `.visually-hidden`) inside a scroll box needs a positioned ancestor, or it widens the page.
 - API calls go only through `src/lib/api.ts`; pass tokens with the `token` option. localStorage goes only through `src/lib/storage.ts`, which never throws. Treat everything stored there as optional.
 - Components handle poll data through `src/lib/polls.ts`, which encrypts before sending and validates after decrypting (`model.ts`), not through `crypto.ts` or the poll endpoints of `api.ts`. Links are built and parsed in `links.ts`; the polls saved in this browser (keys and tokens) go through `deviceStore.ts`.
 - Prettier formats everything (tabs, single quotes, 120-character lines).

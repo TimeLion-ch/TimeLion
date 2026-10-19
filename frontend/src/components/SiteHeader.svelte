@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '../lib/i18n.svelte';
-	import { link } from '../lib/router.svelte';
+	import { link, router } from '../lib/router.svelte';
 	import LanguageSwitcher from './LanguageSwitcher.svelte';
 	import Logo from './Logo.svelte';
 </script>
@@ -9,9 +9,14 @@
 	<nav class="container" aria-label={t('nav.main')}>
 		<a class="brand" href="/" use:link>
 			<Logo size={40} />
-			<span>{t('app.name')}</span>
+			<span class="name">{t('app.name')}</span>
 		</a>
-		<LanguageSwitcher />
+		<div class="end">
+			<a class="my" href="/my" use:link aria-current={router.route.name === 'my' ? 'page' : undefined}>
+				{t('nav.myPolls')}
+			</a>
+			<LanguageSwitcher />
+		</div>
 	</nav>
 </header>
 
@@ -27,6 +32,35 @@
 		justify-content: space-between;
 		gap: var(--space-3);
 		padding-block: var(--space-3);
+	}
+
+	.end {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.my {
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.my:hover,
+	.my[aria-current='page'] {
+		text-decoration: underline;
+		text-underline-offset: 0.25em;
+	}
+
+	/* On narrow screens the logo alone stands for the name; screen readers still get it. */
+	@media (max-width: 25rem) {
+		.name {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
+		}
 	}
 
 	.brand {

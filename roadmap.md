@@ -151,31 +151,56 @@ Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
 
 Every UI task: all text goes in both locale files; there are no CSP violations; the layout works at 360 px width and in light and dark mode; it's keyboard accessible.
 
-- [ ] **3.1 Create a poll: basics** (route `/new`, `src/routes/CreatePoll.svelte`). Depends on 2.5 and 2.6.
+- [x] **3.1 Create a poll: basics** (route `/new`, `src/routes/CreatePoll.svelte`). Depends on 2.5 and 2.6. — done 2026-10-19
   - Fields: title, description and location; date selection via a month calendar (multi-select, keyboard accessible); expiry (default: 30 days after the last option, capped at `MAX_LIFETIME`).
   - Create the reusable components it needs in `src/components/` (Button, TextField, Notice, …).
   - On the home page, replace the "being rebuilt" notice with a "Create poll" button.
   - Submit: `polls.createPoll`, save to the device store, then navigate to the admin link.
   - Done when: creating a poll works end to end against `composer serve`.
-- [ ] **3.2 Create a poll: time slots**
+  - Next: `PollForm` edits a `PollDraft` (`bind:draft`); `buildPoll(draft)` makes the document and `expiresAt(draft, now)` the expiry. After creating, the page navigates to the admin link, which has no route until 3.3/3.4.
+  - Split, because it is over 400 lines:
+    - [x] **3.1a Building blocks**: colour tokens and base form styles in `app.css`, `Button`, `TextField` and `Notice`, plus `lib/dates.ts` (date arithmetic and timezones), `lib/format.ts` (`Intl` formatting) and `lib/errors.ts` (error messages). — done 2026-10-19
+      - Next: dates are `YYYY-MM-DD` strings with UTC arithmetic; `zonedToUtc(date, time, timeZone)` converts wall-clock times. `format.ts` uses de-CH and en-GB. `errorMessage(error)` returns a message key. `Button` with `href` renders an internal link.
+    - [x] **3.1b Month calendar**: `components/Calendar.svelte`, multi-select and keyboard accessible. — done 2026-10-19
+    - [x] **3.1c The `/new` page**: `lib/pollDraft.ts` (form state → poll document and expiry), `PollForm`, `CreatePoll`, the route and the button on the home page. — done 2026-10-19
+- [x] **3.2 Create a poll: time slots** — done 2026-10-19
   - Optional time ranges per date ("all day" by default), a "copy times to all dates" action, and the timezone shown (default: the browser's).
-- [ ] **3.3 Share screen**
+  - Next: a `DraftDay` has `slots` (`{ start, end }` as `HH:MM`, the end optional); an end before the start is on the next day. `DayList` edits them; `PollForm` validates live after the first submit.
+- [x] **3.3 Share screen** — done 2026-10-19
   - Right after creation, show the participant link and admin link in copy fields (Clipboard API with a select-text fallback), with a clear warning that lost links cannot be recovered. It can be dismissed and appears only once per poll.
-- [ ] **3.4 Poll page: viewing** (route `/p/:id`, 32-hex IDs only)
+  - Next: the route `poll` (`/p/{id}`) renders `PollPage`. "Just created" is history state (`navigate(path, { state: { created: true } })`, read as `router.state`), so the share screen survives a reload but not dismissal (`replaceState({})`). Outside it, `PollPage` still shows the 404 page until 3.4.
+- [x] **3.4 Poll page: viewing** (route `/p/:id`, 32-hex IDs only) — done 2026-10-19
   - Load and decrypt the poll. Show the title, description and location, and an options × participants table with yes/maybe counts and the best option highlighted.
   - Error states: the link has no key; decryption fails ("link incomplete or wrong"); not found or expired; network error.
-- [ ] **3.5 Voting**
+  - Next: `ResultsTable` takes the poll and the loaded responses; the best options score 2 per yes and 1 per maybe (`results.ts`). Absolutely positioned content inside a scroll box needs a positioned box (`position: relative`), or it widens the page.
+  - Split, because it is over 400 lines:
+    - [x] **3.4a Loading and error states**: the route loads and decrypts the poll, saves it to the device store, shows the title, description, location and status, and the four error states. — done 2026-10-19
+      - Next: `router.hash` is reactive and `App.svelte` re-creates `PollPage` for every ID and fragment. `loadProblem(error)` (errors.ts) sorts load errors.
+    - [x] **3.4b Results table**: `lib/results.ts` (tallies, best option) and the options × participants table with totals and comments. — done 2026-10-19
+- [x] **3.5 Voting** — done 2026-10-19
   - Add a response (name plus yes/maybe/no per option, with maybe only if allowed), and edit or delete your own responses using the edit tokens from the device store. Closed polls are read-only.
-- [ ] **3.6 Admin panel** (visible when the fragment contains an admin token)
+  - Next: `PollPage` keeps this browser's responses as `own` (device store) and reloads with `load()`; `VotePanel` takes them. `ConfirmButton` asks before anything that can't be undone.
+  - Split, because it is over 400 lines:
+    - [x] **3.5a Adding a response**: `lib/responseDraft.ts`, the voting form and the panel that sends it and saves the edit token to the device store. — done 2026-10-19
+    - [x] **3.5b Editing and deleting your responses**: the list of this browser's responses with edit and delete (`ConfirmButton`), and "you" in the table. — done 2026-10-19
+- [x] **3.6 Admin panel** (visible when the fragment contains an admin token) — done 2026-10-19
   - Edit texts and options (warn that removing an option drops its votes), close and reopen, choose the final option, delete individual responses, and delete the poll (with confirmation).
-- [ ] **3.7 Responsive and accessible results table**
+  - Next: `draftFromPoll(poll, expiresAt)` and `editedPoll(previous, draft)` keep option IDs; `removedOptions` finds what an edit drops. The admin panel is a disclosure (collapsed by default) below the poll's notices. Local UI tests can hit the hourly rate limits (`DELETE FROM rate_limits` in the dev database).
+  - Split, because it is over 400 lines:
+    - [x] **3.6a Admin actions**: close and reopen, choose the final option, delete individual (also unreadable) responses, delete the poll, and both links. — done 2026-10-19
+    - [x] **3.6b Editing the poll**: the poll form for an existing poll, keeping option IDs (and so the votes) of unchanged options, with a warning before options with votes are removed. — done 2026-10-19
+- [x] **3.7 Responsive and accessible results table** — done 2026-10-19
   - Mobile layout (options as a list showing your own vote and the totals), keyboard navigation, screen-reader labels, and enough contrast in both themes.
-- [ ] **3.8 My polls** (route `/my`, plus a "Meine Umfragen / My polls" link in the header, as in the old navbar)
+  - Next: below 40rem `ResultsList` replaces `ResultsTable` (CSS only); comments are in `CommentList`. The table's scroll box is a focusable region, so the keyboard can scroll it. Text contrast is at least 4.5:1 and the focus ring and form borders at least 3:1 in both themes.
+- [x] **3.8 My polls** (route `/my`, plus a "Meine Umfragen / My polls" link in the header, as in the old navbar) — done 2026-10-19
   - List the polls from the device store (decrypting titles lazily), with open, forget and forget all. Explain that this list exists only in this browser.
-- [ ] **3.9 Calendar export**
+  - Next: only entries without a stored title are loaded, one after another, so the server doesn't see every poll of this browser at once. Below 25rem the header shows the logo without the name.
+- [x] **3.9 Calendar export** — done 2026-10-19
   - Download the final option as an `.ics` file (generated in the browser as a Blob, RFC 5545, with correct timezones), offered as an "Add to calendar" button on closed polls.
-- [ ] **3.10 Personal edit link**
+  - Next: `buildIcs` writes times in UTC (no VTIMEZONE needed) and whole days as dates; the file never contains the poll's link. A Blob download needs no CSP change.
+- [x] **3.10 Personal edit link** — done 2026-10-19
   - After voting, offer a link (`#k=…&r={responseId}.{editToken}`) for editing the response from another device, and handle it on the poll page.
+  - Next: opening a personal link saves its token in the device store (only if the response still exists) and opens the response in the form.
 
 ## Phase 4: Privacy, legal, quality
 

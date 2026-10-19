@@ -1,0 +1,304 @@
+<script lang="ts">
+	import AdminPanel from '../components/AdminPanel.svelte';
+	import Button from '../components/Button.svelte';
+	import CommentList from '../components/CommentList.svelte';
+	import EditPoll from '../components/EditPoll.svelte';
+	import Notice from '../components/Notice.svelte';
+	import ResultsList from '../components/ResultsList.svelte';
+	import ResultsTable from '../components/ResultsTable.svelte';
+	import ShareScreen from '../components/ShareScreen.svelte';
+	import VotePanel from '../components/VotePanel.svelte';
+	import { deviceStore, type ResponseRef } from '../lib/deviceStore';
+	import { downloadText } from '../lib/download';
+	import { loadProblem, type LoadProblem } from '../lib/errors';
+	import { formatTimestamp, optionLabel } from '../lib/format';
+	import { i18n, t } from '../lib/i18n.svelte';
+	import { buildIcs, icsFilename } from '../lib/ics';
+	import { parseFragment } from '../lib/links';
+	import { loadPoll, type LoadedPoll } from '../lib/polls';
+	import { hasTimes } from '../lib/results';
+	import { replaceState, router } from '../lib/router.svelte';
+
+	/** A poll, opened with the key (and maybe a token) from the link's fragment. */
+	let { id, hash }: { id: string; hash: string } = $props();
+
+	// The page is re-created for every ID and fragment (App.svelte).
+	// svelte-ignore state_referenced_locally
+	const fragment = parseFragment(hash);
+
+	let loaded = $state<LoadedPoll | null>(null);
+	let problem = $state<LoadProblem | null>(fragment === null ? 'noKey' : null);
+	let loading = $state(false);
+	let deleted = $state(false);
+	let editing = $state(false);
+	let edited = $state(false);
+	/** The responses this browser can edit. */
+	let own = $state<ResponseRef[]>([]);
+
+	const poll = $derived(loaded?.poll);
+	const ownIds = $derived(new Set(own.map((ref) => ref.id)));
+	const finalOption = $derived(poll?.options.find((option) => option.id === poll.finalOptionId));
+
+	async function load() {
+		if (fragment === null) {
+			return;
+		}
+		loading = true;
+		try {
+			loaded = await loadPoll(id, fragment.key);
+			problem = null;
+			const details: { title: string; adminToken?: string } = { title: loaded.poll.title };
+			if (fragment.adminToken !== undefined) {
+				details.adminToken = fragment.adminToken;
+			}
+			deviceStore.savePoll(id, fragment.key, details);
+			// A personal edit link makes its response this browser's, if the response still exists.
+			const edit = fragment.edit;
+			if (edit !== undefined && loaded.responses.some((entry) => entry.id === edit.responseId)) {
+				deviceStore.saveResponse(id, fragment.key, { id: edit.responseId, editToken: edit.editToken });
+			}
+			own = deviceStore.get(id)?.responses ?? [];
+		} catch (error) {
+			problem = loadProblem(error);
+		} finally {
+			loading = false;
+		}
+	}
+
+	function addToCalendar() {
+		if (poll === undefined || finalOption === undefined) {
+			return;
+		}
+		const ics = buildIcs(poll, finalOption, { pollId: id, host: location.hostname, now: Date.now() });
+		downloadText(icsFilename(poll.title), ics, 'text/calendar;charset=utf-8');
+	}
+
+	async function finishEdit(saved: boolean) {
+		editing = false;
+		edited = saved;
+		window.scrollTo(0, 0);
+		if (saved) {
+			await load();
+		}
+	}
+
+	function onDeleted() {
+		deviceStore.forget(id);
+		deleted = true;
+		window.scrollTo(0, 0);
+	}
+
+	function dismissShare() {
+		replaceState({});
+		window.scrollTo(0, 0);
+	}
+
+	void load();
+</script>
+
+<svelte:head>
+	<title>{poll === undefined ? t('poll.title') : poll.title} · {t('app.name')}</title>
+</svelte:head>
+
+{#if deleted}
+	<section class="problem" role="status">
+		<h1>{t('poll.deletedTitle')}</h1>
+		<p>{t('poll.deletedText')}</p>
+		<Button href="/">{t('notFound.back')}</Button>
+	</section>
+{:else if router.state.created && fragment?.adminToken !== undefined}
+	<ShareScreen {id} pollKey={fragment.key} adminToken={fragment.adminToken} ondone={dismissShare} />
+{:else if problem !== null}
+	<section class="problem">
+		<h1>{t(`poll.${problem}.title`)}</h1>
+		<p>{t(`poll.${problem}.text`)}</p>
+		<div class="actions">
+			{#if problem === 'network' || problem === 'generic'}
+				<Button variant="primary" busy={loading} onclick={load}>{t('poll.retry')}</Button>
+			{/if}
+			<Button href="/">{t('notFound.back')}</Button>
+		</div>
+	</section>
+{:else if loaded === null || poll === undefined}
+	<p class="loading" role="status">{t('poll.loading')}</p>
+{:else if editing && fragment?.adminToken !== undefined}
+	<EditPoll {id} pollKey={fragment.key} adminToken={fragment.adminToken} {loaded} ondone={finishEdit} />
+{:else}
+	<article class="poll">
+		<header>
+			<h1>{poll.title}</h1>
+			{#if poll.location !== undefined}
+				<p class="location">
+					<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"
+						><path
+							d="M10 18s6-5.3 6-10a6 6 0 0 0-12 0c0 4.7 6 10 6 10Z"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+						/><circle cx="10" cy="8" r="2.2" fill="currentColor" /></svg
+					>
+					<span class="visually-hidden">{t('poll.location')}:</span>
+					{poll.location}
+				</p>
+			{/if}
+			{#if poll.description !== undefined}
+				<p class="description">{poll.description}</p>
+			{/if}
+			<p class="meta">
+				{t('poll.expires', { date: formatTimestamp(loaded.meta.expiresAt, i18n.locale) })}
+				{#if hasTimes(poll)}
+					· {t('poll.timezone', { zone: poll.timezone.replaceAll('_', ' ') })}
+				{/if}
+			</p>
+		</header>
+
+		{#if edited}
+			<Notice kind="success" role="status"><p>{t('edit.saved')}</p></Notice>
+		{/if}
+		{#if finalOption !== undefined}
+			<Notice kind="success" title={t('poll.finalTitle')}>
+				<p>{optionLabel(finalOption, i18n.locale, 'long')}</p>
+				{#if loaded.meta.closedAt !== null}
+					<div class="calendar">
+						<Button variant="primary" onclick={addToCalendar}>{t('poll.addToCalendar')}</Button>
+						<p class="hint">{t('poll.addToCalendarHint')}</p>
+					</div>
+				{/if}
+			</Notice>
+		{/if}
+		{#if loaded.meta.closedAt !== null}
+			<Notice>
+				<p>{t('poll.closed')}</p>
+			</Notice>
+		{/if}
+		{#if loaded.skippedResponses.length > 0}
+			<Notice kind="warning">
+				<p>{t('poll.skipped', { count: loaded.skippedResponses.length })}</p>
+			</Notice>
+		{/if}
+
+		{#if fragment?.adminToken !== undefined}
+			<AdminPanel
+				{id}
+				pollKey={fragment.key}
+				adminToken={fragment.adminToken}
+				{loaded}
+				onchange={load}
+				ondeleted={onDeleted}
+				onedit={() => {
+					edited = false;
+					editing = true;
+					window.scrollTo(0, 0);
+				}}
+			/>
+		{/if}
+
+		<section aria-labelledby="results-title">
+			<h2 id="results-title">{t('results.title', { count: loaded.responses.length })}</h2>
+			<!-- One of the two layouts is shown, depending on the width (display: none hides the other from everyone). -->
+			<div class="wide">
+				<ResultsTable {poll} responses={loaded.responses} own={ownIds} />
+			</div>
+			<div class="narrow">
+				<ResultsList {poll} responses={loaded.responses} own={ownIds} />
+			</div>
+			<CommentList responses={loaded.responses} />
+		</section>
+
+		{#if loaded.meta.closedAt === null && fragment !== null}
+			<VotePanel
+				{id}
+				pollKey={fragment.key}
+				{poll}
+				responses={loaded.responses}
+				{own}
+				onchange={load}
+				initialEdit={fragment.edit?.responseId}
+			/>
+		{/if}
+	</article>
+{/if}
+
+<style>
+	.problem,
+	.loading {
+		max-width: 40rem;
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--space-2);
+	}
+
+	.poll {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	header > :last-child {
+		margin-bottom: 0;
+	}
+
+	h1 {
+		overflow-wrap: anywhere;
+	}
+
+	.location {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-weight: 600;
+		overflow-wrap: anywhere;
+	}
+
+	.location svg {
+		flex: none;
+		color: var(--color-primary);
+	}
+
+	.description {
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.calendar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2) var(--space-3);
+		margin-top: var(--space-3);
+	}
+
+	.calendar .hint {
+		margin: 0;
+		font-size: 0.875rem;
+	}
+
+	.meta {
+		color: var(--color-muted);
+		font-size: 0.875rem;
+	}
+
+	h2 {
+		font-size: 1.25rem;
+	}
+
+	.wide {
+		display: none;
+	}
+
+	@media (min-width: 40rem) {
+		.wide {
+			display: block;
+		}
+
+		.narrow {
+			display: none;
+		}
+	}
+</style>
