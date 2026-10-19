@@ -36,6 +36,8 @@ Expired polls are deleted automatically after about 2% of API requests. If your 
 php bin/purge.php
 ```
 
+`public/.well-known/security.txt` names the TimeLion project as the security contact. On your own instance, replace it with your contact, or delete it.
+
 Point the document root at `public/` if your host allows it. If the document root has to stay the app root, the `.htaccess` there rewrites every request into `public/`. Either way, nothing outside `public/` may be reachable from the web.
 
 Automated deployment with GitHub Actions (FTP with TLS, for webspaces without SSH) is described in [CLAUDE.md → Deployment](CLAUDE.md#deployment).

@@ -28,8 +28,9 @@ If a task grows beyond roughly 400 changed lines (not counting tests and lock fi
 | D5  | German copy uses Swiss spelling (ss) and the informal "du"; German is the default language                                              | 2026-10-18 |
 | D6  | The webspace offers FTP only, so the deploy uses FTP with mandatory TLS (lftp) and runs migrations via a one-time-token endpoint. Replaces "rsync over SSH" in D1 | 2026-10-18 |
 | D7  | The maximum poll lifetime (`MAX_LIFETIME`) is 365 days: `expiresAt` may be at most 365 days after the request that sets it        | 2026-10-19 |
+| D8  | Security contact: GitHub private vulnerability reporting, in `security.txt` and `SECURITY.md`; no e-mail address is published         | 2026-10-19 |
 
-Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), security contact (4.3), license (4.5), notifications (6.6).
+Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), license (4.5), notifications (6.6).
 
 ## Phase 0: Foundation ✅
 
@@ -211,8 +212,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [ ] **4.2 Legal pages** 🧭 operator name, address, contact e-mail, hosting provider
   - Routes `/privacy` and `/imprint`, linked in the footer as in the old site ("Impressum", "Kontakt").
   - The privacy policy lists what is stored (ciphertext plus the metadata from CLAUDE.md) and the host's access logs and their retention. The wording should fit the Swiss nFADP and be available in German and English.
-- [ ] **4.3 security.txt** 🧭 security contact
+- [x] **4.3 security.txt** — done 2026-10-19 (D8: GitHub private vulnerability reporting)
   - Add `public/.well-known/security.txt` (RFC 9116). The deploy currently excludes `public/.well-known/` from the upload (`.github/scripts/deploy-ftp.sh`). Decide whether this file is deployed from the repository, and adjust the exclude if so.
+  - Next: the file is deployed from the repository (the only file of `public/.well-known/` that is); the smoke test fetches it. Its `Expires` is renewed by hand, and `tests/SecurityTxtTest.php` fails 30 days before it passes. `SECURITY.md` is its policy. Private vulnerability reporting must be on in the GitHub repository settings (Security → Private vulnerability reporting).
 - [ ] **4.4 Security review**
   - Checklist: XSS (no `{@html}`, user URLs rendered as text), token handling, CSP still hash-only, headers on every response type, size and rate limits, error messages, and dependency audits (`composer audit`, `npm audit --omit=dev` in CI).
   - Done when: findings are fixed or added as tasks.

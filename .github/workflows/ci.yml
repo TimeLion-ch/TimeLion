@@ -232,3 +232,7 @@ jobs:
           curl --fail --silent --show-error "${DEPLOY_URL%/}/" | grep -q '<div id="app">'
           # Nothing outside public/ is reachable: a file in the app root gets the single-page app, not its own content.
           curl --fail --silent --show-error "${DEPLOY_URL%/}/config.example.php" | grep -q '<div id="app">'
+          # security.txt (RFC 9116) comes from the release, as UTF-8 text.
+          curl --fail --silent --show-error --dump-header "$RUNNER_TEMP/security-txt-headers" \
+            "${DEPLOY_URL%/}/.well-known/security.txt" | grep -q '^Contact: https://'
+          grep -qi '^content-type: text/plain; *charset=utf-8' "$RUNNER_TEMP/security-txt-headers"

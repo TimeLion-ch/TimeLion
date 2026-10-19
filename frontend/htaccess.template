@@ -8,6 +8,11 @@ DirectoryIndex index.html
 	Options -MultiViews
 </IfModule>
 
+# .well-known/security.txt (RFC 9116) must be served as text/plain; charset=utf-8.
+<IfModule mod_mime.c>
+	AddCharset utf-8 .txt
+</IfModule>
+
 # public/api/ is a directory: without this, /api would be redirected to /api/ (over plain http on some hosts).
 <IfModule mod_dir.c>
 	DirectorySlash Off
