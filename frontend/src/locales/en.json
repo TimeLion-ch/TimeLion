@@ -113,5 +113,12 @@
 	"vote.yes": "Yes",
 	"vote.maybe": "Maybe",
 	"vote.no": "No",
-	"vote.none": "No answer"
+	"vote.none": "No answer",
+	"vote.title": "Your response",
+	"vote.name": "Your name",
+	"vote.comment": "Comment",
+	"vote.submit": "Send response",
+	"vote.saved": "Thank you! Your response is saved.",
+	"vote.addAnother": "Add another response",
+	"vote.error.nameRequired": "Enter your name."
 }

@@ -3,7 +3,8 @@
 	import Notice from '../components/Notice.svelte';
 	import ResultsTable from '../components/ResultsTable.svelte';
 	import ShareScreen from '../components/ShareScreen.svelte';
-	import { deviceStore } from '../lib/deviceStore';
+	import VotePanel from '../components/VotePanel.svelte';
+	import { deviceStore, type ResponseRef } from '../lib/deviceStore';
 	import { loadProblem, type LoadProblem } from '../lib/errors';
 	import { formatTimestamp, optionLabel } from '../lib/format';
 	import { i18n, t } from '../lib/i18n.svelte';
@@ -22,6 +23,8 @@
 	let loaded = $state<LoadedPoll | null>(null);
 	let problem = $state<LoadProblem | null>(fragment === null ? 'noKey' : null);
 	let loading = $state(false);
+	/** The responses this browser can edit. */
+	let own = $state<ResponseRef[]>([]);
 
 	const poll = $derived(loaded?.poll);
 	const finalOption = $derived(poll?.options.find((option) => option.id === poll.finalOptionId));
@@ -39,6 +42,7 @@
 				details.adminToken = fragment.adminToken;
 			}
 			deviceStore.savePoll(id, fragment.key, details);
+			own = deviceStore.get(id)?.responses ?? [];
 		} catch (error) {
 			problem = loadProblem(error);
 		} finally {
@@ -122,6 +126,10 @@
 			<h2 id="results-title">{t('results.title', { count: loaded.responses.length })}</h2>
 			<ResultsTable {poll} responses={loaded.responses} />
 		</section>
+
+		{#if loaded.meta.closedAt === null && fragment !== null}
+			<VotePanel {id} pollKey={fragment.key} {poll} responses={loaded.responses} {own} onchange={load} />
+		{/if}
 	</article>
 {/if}
 

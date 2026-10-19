@@ -113,5 +113,12 @@
 	"vote.yes": "Ja",
 	"vote.maybe": "Vielleicht",
 	"vote.no": "Nein",
-	"vote.none": "Keine Antwort"
+	"vote.none": "Keine Antwort",
+	"vote.title": "Deine Antwort",
+	"vote.name": "Dein Name",
+	"vote.comment": "Kommentar",
+	"vote.submit": "Antwort senden",
+	"vote.saved": "Danke! Deine Antwort ist gespeichert.",
+	"vote.addAnother": "Weitere Antwort hinzufügen",
+	"vote.error.nameRequired": "Gib deinen Namen ein."
 }
