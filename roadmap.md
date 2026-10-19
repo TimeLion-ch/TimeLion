@@ -119,27 +119,33 @@ Tasks:
 
 Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
 
-- [ ] **2.1 Crypto module** (`src/lib/base64url.ts`, `src/lib/crypto.ts`)
+- [x] **2.1 Crypto module** (`src/lib/base64url.ts`, `src/lib/crypto.ts`) — done 2026-10-19
   - `generatePollKey()`, `exportKey(key)` (base64url), `importKey(string)`, `encryptJson(key, kind, value)` (returns the envelope string) and `decryptJson(key, kind, envelope)` (returns `unknown`), following CLAUDE.md → Encryption design exactly. Implement base64url in plain TypeScript, without `Buffer`.
   - Done when: Vitest covers the round trip, wrong key fails, tampered ciphertext fails, wrong `kind` fails, the envelope matches the backend regex, and IVs differ between calls.
-- [ ] **2.2 Plaintext model and validation** (`src/lib/model.ts`)
+  - Next: every decryption failure (malformed envelope, wrong key or kind, tampering, plaintext that isn't UTF-8 JSON) throws `DecryptionError`. `importKey` rejects with `TypeError` unless the key is 43 canonical base64url characters (`KEY_PATTERN`), and imported keys are not extractable.
+- [x] **2.2 Plaintext model and validation** (`src/lib/model.ts`) — done 2026-10-19
   - Types plus hand-written validators (no schema library):
     - `Poll`: `{ v: 1, title (1–200 chars), description? (≤ 2000), location? (≤ 200), timezone (IANA name), options: [{ id (8 hex), start: 'YYYY-MM-DD' | ISO date-time, end? }] (1–100), allowMaybe: boolean, finalOptionId? }`
     - `Response`: `{ v: 1, name (1–80), votes: { [optionId]: 'yes' | 'maybe' | 'no' }, comment? (≤ 500) }`
   - The validators return the typed value or `null`. They drop unknown fields and ignore votes for unknown options.
   - Done when: tests cover valid input and hostile input (huge strings, wrong types, `__proto__` keys, deeply nested values).
-- [ ] **2.3 Links** (`src/lib/links.ts`)
+  - Next: the types are `Poll`, `PollOption` and `PollResponse` (not `Response`, which would shadow the DOM type); `parseResponse(value, poll)` needs the poll for its option IDs. An option's `start` is `YYYY-MM-DD` or a wall-clock `YYYY-MM-DDTHH:MM` in the poll's `timezone`, without offset; `end` has the same form and is later (for days: the inclusive last day). An unknown `finalOptionId` is dropped. `limits` has the field lengths (UTF-16 code units, like `maxlength`).
+- [x] **2.3 Links** (`src/lib/links.ts`) — done 2026-10-19
   - `participantLink(origin, id, key)`, `adminLink(origin, id, key, adminToken)` and `parseFragment(hash)`, which returns `{ key, adminToken?, edit?: { responseId, editToken } } | null`. The fragment uses `URLSearchParams` syntax.
   - Done when: tests cover round trips, garbage fragments, and missing or invalid keys.
-- [ ] **2.4 Typed API client for the Phase 1 endpoints** (`src/lib/api.ts`). Depends on 1.5–1.8.
+  - Next: `editLink(origin, id, key, responseId, editToken)` exists too, for 3.10. `parseFragment` returns null only for a missing or malformed key; a malformed admin token or edit part is left out. `KEY_PATTERN` (crypto.ts) now also rejects a non-canonical last character.
+- [x] **2.4 Typed API client for the Phase 1 endpoints** (`src/lib/api.ts`). Depends on 1.5–1.8. — done 2026-10-19
   - Add `api.createPoll`, `getPoll`, `updatePoll`, `deletePoll`, `createResponse`, `updateResponse` and `deleteResponse`, typed to match `docs/api.md`.
   - Done when: each has a test with mocked `fetch`.
-- [ ] **2.5 Poll service** (`src/lib/polls.ts`). Depends on 2.1–2.4.
+  - Next: methods take positional arguments, tokens before bodies (`updatePoll(id, adminToken, patch)`, `updateResponse(pollId, responseId, editToken, ciphertext)`). A malformed ID rejects with `ApiError(404, 'not_found')` without a request. `serverLimits` mirrors `Limits.php`, including `maxLifetime` for 3.1.
+- [x] **2.5 Poll service** (`src/lib/polls.ts`). Depends on 2.1–2.4. — done 2026-10-19
   - High-level functions that combine crypto, model and API: `createPoll(poll, expiresAt)` returns `{ id, key, adminToken }`; `loadPoll(id, key)` returns `{ poll, responses, skippedResponses, meta }`, skipping invalid responses instead of failing; also `submitResponse`, `editResponse`, `deleteResponse`, `updatePoll`, `closePoll` and `deletePoll`.
   - Done when: tests with a mocked API layer cover the full encrypt → store → load → decrypt path.
-- [ ] **2.6 Device store** (`src/lib/deviceStore.ts`)
+  - Next: the functions take the key as the base64url string from the link or device store. `submitResponse(id, key, poll, response)` and `editResponse(id, key, poll, responseId, editToken, response)` need the loaded poll for its option IDs; documents are validated before encrypting (`TypeError` if invalid). `loadPoll` throws `UnreadablePollError` for a malformed or wrong key or an invalid poll; `skippedResponses` holds the IDs of unreadable responses. `reopenPoll` exists next to `closePoll`.
+- [x] **2.6 Device store** (`src/lib/deviceStore.ts`) — done 2026-10-19
   - Polls this browser created or answered: `{ id, key, adminToken?, responses: [{ id, editToken }], title?, savedAt }[]`, stored under the localStorage key `timelion.polls.v1` via `storage.ts`. Also `forget(id)` and `forgetAll()`.
   - Done when: tests (with an in-memory storage stub) also show that corrupted stored content is ignored.
+  - Next: use `deviceStore` with `savePoll(id, key, { adminToken?, title? })` after creating or opening a poll, `saveResponse(pollId, key, { id, editToken })` after voting and `forgetResponse()` after deleting a response; `list()` is most recent first. `savedAt` is Unix seconds. `ID_PATTERN` and `TOKEN_PATTERN` live in api.ts.
 
 ## Phase 3: User interface
 
