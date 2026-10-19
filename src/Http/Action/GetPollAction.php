@@ -7,11 +7,9 @@ namespace TimeLion\Http\Action;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TimeLion\Clock;
-use TimeLion\Http\ApiError;
 use TimeLion\Http\Json;
-use TimeLion\Http\Validate;
+use TimeLion\Http\PollAccess;
 use TimeLion\Polls\PollResponse;
-use TimeLion\Repository\PollRepository;
 use TimeLion\Repository\ResponseRepository;
 
 /**
@@ -21,7 +19,7 @@ use TimeLion\Repository\ResponseRepository;
 final readonly class GetPollAction
 {
 	public function __construct(
-		private PollRepository $polls,
+		private PollAccess $access,
 		private ResponseRepository $responses,
 		private Clock $clock,
 	) {}
@@ -31,7 +29,7 @@ final readonly class GetPollAction
 	 */
 	public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
 	{
-		$poll = $this->polls->findActive(Validate::id($args['id'] ?? ''), $this->clock->now()) ?? throw ApiError::notFound();
+		$poll = $this->access->poll($args['id'] ?? '', $this->clock->now());
 
 		return Json::response($response, [
 			'id' => $poll->id,

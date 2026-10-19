@@ -7,9 +7,11 @@ namespace TimeLion;
 use DI\Container;
 use Slim\App;
 use TimeLion\Http\Action\CreatePollAction;
+use TimeLion\Http\Action\DeletePollAction;
 use TimeLion\Http\Action\DeployMigrateAction;
 use TimeLion\Http\Action\GetPollAction;
 use TimeLion\Http\Action\HealthAction;
+use TimeLion\Http\Action\UpdatePollAction;
 
 /**
  * All API routes. Paths are relative to Kernel::BASE_PATH (/api).
@@ -27,5 +29,7 @@ final class Routes
 
 		$app->post('/polls', CreatePollAction::class);
 		$app->get('/polls/{id}', GetPollAction::class);
+		$app->patch('/polls/{id}', UpdatePollAction::class);
+		$app->delete('/polls/{id}', DeletePollAction::class);
 	}
 }

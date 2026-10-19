@@ -44,6 +44,33 @@ abstract class AppTestCase extends TestCase
 		unset($this->app, $this->pdo, $this->clock);
 	}
 
+	/**
+	 * Creates a poll through the API, open for a week.
+	 *
+	 * @return array{id: string, adminToken: string}
+	 */
+	protected function newPoll(): array
+	{
+		$response = $this->requestJson('POST', '/api/polls', [
+			'ciphertext' => Fixtures::ciphertext('P'),
+			'expiresAt' => $this->clock->now() + 7 * 86400,
+		]);
+		self::assertSame(201, $response->getStatusCode());
+		$data = self::json($response);
+		self::assertIsString($data['id'] ?? null);
+		self::assertIsString($data['adminToken'] ?? null);
+
+		return ['id' => $data['id'], 'adminToken' => $data['adminToken']];
+	}
+
+	/**
+	 * @return array{Authorization: string}
+	 */
+	protected static function bearer(string $token): array
+	{
+		return ['Authorization' => 'Bearer ' . $token];
+	}
+
 	protected function polls(): PollRepository
 	{
 		return new PollRepository($this->pdo);

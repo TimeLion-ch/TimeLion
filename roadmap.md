@@ -85,12 +85,13 @@ Tasks:
   - Unknown, malformed and expired IDs all return **404** `not_found` and are indistinguishable.
   - Done when: tests cover expired polls and responses belonging to other polls not leaking in.
   - Next: actions get route arguments as `array<string, string> $args`; `Validate::id($args['id'] ?? '')` throws the 404. `AppTestCase` has `polls()` and `responses()`.
-- [ ] **1.7 Admin: `PATCH` and `DELETE /api/polls/{id}`**
+- [x] **1.7 Admin: `PATCH` and `DELETE /api/polls/{id}`** — done 2026-10-19
   - Both require `Authorization: Bearer <adminToken>`.
   - `PATCH` body: any subset of `ciphertext`, `expiresAt` and `closed` (bool). It returns **200** `{ "id", "updatedAt", "expiresAt", "closedAt" }`.
   - `DELETE` returns **204** and cascades.
   - Errors: 401 for a missing or malformed token, 403 for a wrong token, 404 for an unknown or expired poll, 400 for an empty patch.
   - Done when: every status code has a test, and tokens are compared via `TokenHash::matches`.
+  - Next: `Http\PollAccess` does the lookup and token check in the documented order (401 → 404 → 403); the body comes after. `AppTestCase` has `newPoll()` and `bearer()`.
 - [ ] **1.8 Responses: `POST /api/polls/{id}/responses`, `PUT` and `DELETE /api/polls/{id}/responses/{responseId}`**
   - `POST` body `{ "ciphertext" }` returns **201** `{ "id", "editToken", "createdAt" }`. It returns **409** `poll_closed` if the poll is closed, and **409** `too_many_responses` once the limit is reached.
   - `PUT` requires the response's edit token. Body `{ "ciphertext" }` returns **200** `{ "id", "updatedAt" }`, or **409** `poll_closed`.

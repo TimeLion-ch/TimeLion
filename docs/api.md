@@ -27,6 +27,16 @@ This file documents **implemented** endpoints only. Planned endpoints are specif
 
 The limits are constants in `src/Polls/Limits.php`. Unknown fields in a request body are ignored.
 
+### Order of checks
+
+When several things are wrong with a request, the first failing check decides the error:
+
+1. token format: `401` (endpoints that need a token)
+2. path IDs, then the poll and response lookup: `404`
+3. token match: `403`
+4. body: `415`, `413`, then `400`
+5. the poll's state: `409`
+
 ### Errors
 
 Every error has the same shape:
@@ -140,3 +150,51 @@ Returns a poll with all its responses. No token is needed: anyone with the link 
 | 404    | `not_found` | The ID is malformed, unknown or expired. The three cases return identical responses       |
 
 A poll is expired from the second `expiresAt` on.
+
+### `PATCH /api/polls/{id}`
+
+Changes a poll. Requires `Authorization: Bearer <adminToken>`.
+
+**Request:** any non-empty subset of these fields.
+
+```json
+{ "ciphertext": "v1.…", "expiresAt": 1801209600, "closed": true }
+```
+
+| Field        | Type    | Rules                                                                                     |
+| ------------ | ------- | ----------------------------------------------------------------------------------------- |
+| `ciphertext` | string  | replaces the poll document; ciphertext envelope, at most 64 KiB                           |
+| `expiresAt`  | integer | Unix seconds, later than now, at most 365 days from now. It may also move the expiry earlier |
+| `closed`     | boolean | `true` closes the poll (closing a closed poll keeps the original `closedAt`), `false` reopens it |
+
+All fields are validated before anything is stored, so an invalid field changes nothing. Every successful request sets `updatedAt`. A closed poll can still be changed.
+
+**200**
+
+```json
+{ "id": "3f2a…", "updatedAt": 1800000500, "expiresAt": 1801209600, "closedAt": 1800000500 }
+```
+
+| Status | `code`                   | When                                                          |
+| ------ | ------------------------ | ------------------------------------------------------------- |
+| 400    | `empty_patch`            | None of `ciphertext`, `expiresAt` and `closed` is present     |
+| 400    | `invalid_ciphertext`, `ciphertext_too_large`, `invalid_expiry` | As for `POST /api/polls`  |
+| 400    | `invalid_field`          | `closed` is not a boolean                                     |
+| 400    | `invalid_json`           | Body is not a JSON object                                     |
+| 401    | `unauthorized`           | Token missing or malformed                                    |
+| 403    | `forbidden`              | Token is not this poll's admin token                          |
+| 404    | `not_found`              | The poll ID is malformed, unknown or expired                  |
+| 413    | `payload_too_large`      | Body is larger than 80 KiB                                    |
+| 415    | `unsupported_media_type` | Body is not `application/json`                                |
+
+### `DELETE /api/polls/{id}`
+
+Deletes a poll and all its responses, immediately and for good. Requires `Authorization: Bearer <adminToken>`. No request body.
+
+**204**, with no body.
+
+| Status | `code`         | When                                         |
+| ------ | -------------- | -------------------------------------------- |
+| 401    | `unauthorized` | Token missing or malformed                   |
+| 403    | `forbidden`    | Token is not this poll's admin token         |
+| 404    | `not_found`    | The poll ID is malformed, unknown or expired |
