@@ -179,6 +179,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
     - [x] **3.4b Results table**: `lib/results.ts` (tallies, best option) and the options × participants table with totals and comments. — done 2026-10-19
 - [ ] **3.5 Voting**
   - Add a response (name plus yes/maybe/no per option, with maybe only if allowed), and edit or delete your own responses using the edit tokens from the device store. Closed polls are read-only.
+  - Split, because it is over 400 lines:
+    - [ ] **3.5a Adding a response**: `lib/responseDraft.ts`, the voting form and the panel that sends it and saves the edit token to the device store.
+    - [ ] **3.5b Editing and deleting your responses**: the list of this browser's responses with edit and delete (`ConfirmButton`), and "you" in the table.
 - [ ] **3.6 Admin panel** (visible when the fragment contains an admin token)
   - Edit texts and options (warn that removing an option drops its votes), close and reopen, choose the final option, delete individual responses, and delete the poll (with confirmation).
 - [ ] **3.7 Responsive and accessible results table**
