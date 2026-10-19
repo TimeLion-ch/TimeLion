@@ -66,10 +66,11 @@ Tasks:
   - Done when: unit tests cover formats, hash matching, and header parsing edge cases (missing, `Basic …`, wrong length, extra spaces).
   - `TokenHash` and `BearerToken` already exist with tests (added early for 5.4); `Random` and the clock are still open.
   - Next: `Random` is static; `AppTestCase` registers a `FrozenClock` as `$this->clock` (default 1,800,000,000, `advance()` moves it).
-- [ ] **1.3 Input validation helpers**
+- [x] **1.3 Input validation helpers** — done 2026-10-19
   - Add validation helpers (e.g. `src/Http/Validate.php`): `ciphertext($value, int $maxBytes)`, `expiresAt($value, int $now)`, `bool($value, string $field)`.
   - They throw `ApiError::badRequest` with `invalid_ciphertext`, `ciphertext_too_large`, `invalid_expiry` or `invalid_field`.
   - Done when: data-provider tests cover valid and invalid values, including wrong types, empty strings and boundary sizes.
+  - Next: patterns need the `D` modifier, or `$` also matches before a trailing newline (the ID check in 1.6 too).
 - [ ] **1.4 Repositories**
   - `src/Repository/PollRepository.php` and `src/Repository/ResponseRepository.php`, using PDO with prepared statements: `insert`, `findActive($id, $now)` (which excludes expired polls), `update`, `delete`, `setClosed`, `countForPoll`, `listForPoll`.
   - Done when: repository tests cover expiry filtering, the cascade and ordering.
