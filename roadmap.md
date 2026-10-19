@@ -123,12 +123,13 @@ Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
   - `generatePollKey()`, `exportKey(key)` (base64url), `importKey(string)`, `encryptJson(key, kind, value)` (returns the envelope string) and `decryptJson(key, kind, envelope)` (returns `unknown`), following CLAUDE.md → Encryption design exactly. Implement base64url in plain TypeScript, without `Buffer`.
   - Done when: Vitest covers the round trip, wrong key fails, tampered ciphertext fails, wrong `kind` fails, the envelope matches the backend regex, and IVs differ between calls.
   - Next: every decryption failure (malformed envelope, wrong key or kind, tampering, plaintext that isn't UTF-8 JSON) throws `DecryptionError`. `importKey` rejects with `TypeError` unless the key is 43 canonical base64url characters (`KEY_PATTERN`), and imported keys are not extractable.
-- [ ] **2.2 Plaintext model and validation** (`src/lib/model.ts`)
+- [x] **2.2 Plaintext model and validation** (`src/lib/model.ts`) — done 2026-10-19
   - Types plus hand-written validators (no schema library):
     - `Poll`: `{ v: 1, title (1–200 chars), description? (≤ 2000), location? (≤ 200), timezone (IANA name), options: [{ id (8 hex), start: 'YYYY-MM-DD' | ISO date-time, end? }] (1–100), allowMaybe: boolean, finalOptionId? }`
     - `Response`: `{ v: 1, name (1–80), votes: { [optionId]: 'yes' | 'maybe' | 'no' }, comment? (≤ 500) }`
   - The validators return the typed value or `null`. They drop unknown fields and ignore votes for unknown options.
   - Done when: tests cover valid input and hostile input (huge strings, wrong types, `__proto__` keys, deeply nested values).
+  - Next: the types are `Poll`, `PollOption` and `PollResponse` (not `Response`, which would shadow the DOM type); `parseResponse(value, poll)` needs the poll for its option IDs. An option's `start` is `YYYY-MM-DD` or a wall-clock `YYYY-MM-DDTHH:MM` in the poll's `timezone`, without offset; `end` has the same form and is later (for days: the inclusive last day). An unknown `finalOptionId` is dropped. `limits` has the field lengths (UTF-16 code units, like `maxlength`).
 - [ ] **2.3 Links** (`src/lib/links.ts`)
   - `participantLink(origin, id, key)`, `adminLink(origin, id, key, adminToken)` and `parseFragment(hash)`, which returns `{ key, adminToken?, edit?: { responseId, editToken } } | null`. The fragment uses `URLSearchParams` syntax.
   - Done when: tests cover round trips, garbage fragments, and missing or invalid keys.
