@@ -23,3 +23,19 @@ export function errorMessage(error: unknown): MessageKey {
 	}
 	return 'error.generic';
 }
+
+/** Why a poll couldn't be shown. A missing key (`noKey`) is found before loading. */
+export type LoadProblem = 'noKey' | 'unreadable' | 'notFound' | 'network' | 'generic';
+
+export function loadProblem(error: unknown): LoadProblem {
+	if (error instanceof UnreadablePollError) {
+		return 'unreadable';
+	}
+	if (error instanceof ApiError && error.code === 'not_found') {
+		return 'notFound';
+	}
+	if (error instanceof ApiError && error.code === 'network_error') {
+		return 'network';
+	}
+	return 'generic';
+}

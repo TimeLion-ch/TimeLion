@@ -16,8 +16,8 @@
 	{:else if router.route.name === 'new'}
 		<CreatePoll />
 	{:else if router.route.name === 'poll'}
-		{#key router.route.id}
-			<PollPage id={router.route.id} />
+		{#key `${router.route.id}${router.hash}`}
+			<PollPage id={router.route.id} hash={router.hash} />
 		{/key}
 	{:else}
 		<NotFound />
