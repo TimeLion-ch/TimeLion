@@ -2,7 +2,11 @@
 	let { size = 40 }: { size?: number } = $props();
 </script>
 
-<!-- TimeLion lion. Colours are presentation attributes (not style=""), which the CSP allows. -->
+<!--
+	The lion is "Lion" from SVG Repo (https://www.svgrepo.com/svg/484717/lion), in the public domain (SVG Repo's "PD
+	License"): free to use and change, no attribution needed. The favicon and docs/logo_sm.png show the same lion.
+	Colours are presentation attributes (not style=""), which the CSP allows.
+-->
 <svg width={size} height={size} viewBox="0 0 512 512" aria-hidden="true" focusable="false"
 	><g
 		><g

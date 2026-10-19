@@ -81,11 +81,12 @@ fi
 echo "Uploading $release to $DEPLOY_FTP_HOST:$DEPLOY_FTP_PATH"
 # Every file is uploaded under a temporary name and renamed when complete, so no request sees a half-written file.
 # --delete spares the excluded files: the server-owned config.php, the contents of var/, what the host puts into the
-# document root (the app root, or public/ on hosts that allow it), and a skipped vendor/. public/index.html and
-# public/.htaccess go up last and back to back, because the CSP in .htaccess holds the hashes of the code in index.html.
+# document root (the app root, or public/ on hosts that allow it), and a skipped vendor/. Of public/.well-known/, only
+# security.txt comes from the release (an include after the excludes wins). public/index.html and public/.htaccess go
+# up last and back to back, because the CSP in .htaccess holds the hashes of the code in index.html.
 ftp <<EOF
 $vendor_before
-mirror --reverse --delete --parallel=3 --verbose $vendor_exclude --exclude '^config\.php\$' --exclude '^var/.' --exclude '^\.well-known/' --exclude '^\.user\.ini\$' --exclude '^public/\.well-known/' --exclude '^public/\.user\.ini\$' --exclude '^public/index\.html\$' --exclude '^public/\.htaccess\$' . .
+mirror --reverse --delete --parallel=3 --verbose $vendor_exclude --exclude '^config\.php\$' --exclude '^var/.' --exclude '^\.well-known/' --exclude '^\.user\.ini\$' --exclude '^public/\.well-known/.' --exclude '^public/\.user\.ini\$' --exclude '^public/index\.html\$' --exclude '^public/\.htaccess\$' --include '^public/\.well-known/security\.txt\$' . .
 $vendor_after
 put public/.htaccess -o public/.htaccess
 put public/index.html -o public/index.html
