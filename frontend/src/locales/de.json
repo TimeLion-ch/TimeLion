@@ -19,5 +19,15 @@
 	"notFound.text": "Diese Seite gibt es nicht. Prüfe den Link oder kehre zur Startseite zurück.",
 	"notFound.back": "Zur Startseite",
 	"footer.copyright": "© {year} TimeLion",
-	"footer.source": "Quellcode"
+	"footer.source": "Quellcode",
+	"form.optional": "optional",
+	"error.network": "Der Server ist nicht erreichbar. Prüfe deine Verbindung und versuche es nochmals.",
+	"error.rateLimited": "Zu viele Anfragen in kurzer Zeit. Warte etwas und versuche es dann nochmals.",
+	"error.notFound": "Diese Umfrage gibt es nicht (mehr). Sie ist abgelaufen oder wurde gelöscht.",
+	"error.pollClosed": "Diese Umfrage ist geschlossen. Antworten können nicht mehr geändert werden.",
+	"error.tooManyResponses": "Diese Umfrage hat die höchste Zahl an Antworten erreicht.",
+	"error.tooLarge": "Die Umfrage ist zu gross. Kürze die Texte oder entferne Termine.",
+	"error.invalidExpiry": "Das Ablaufdatum wurde nicht akzeptiert. Wähle ein früheres Datum.",
+	"error.unreadable": "Der Link ist unvollständig oder falsch: Mit dem Schlüssel darin lässt sich die Umfrage nicht entschlüsseln.",
+	"error.generic": "Etwas ist schiefgelaufen. Versuche es nochmals."
 }

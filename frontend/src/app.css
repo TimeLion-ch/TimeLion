@@ -15,9 +15,18 @@
 	--color-primary: #8b5a2b;
 	--color-primary-contrast: #ffffff;
 	--color-focus: #b7791f;
+	/* Borders of form controls: at least 3:1 against the surface (WCAG 1.4.11). */
+	--color-border-strong: #8a7764;
+	--color-danger: #a1281f;
+	--color-danger-soft: #fbe3e0;
+	--color-success: #1e6b34;
+	--color-success-soft: #e3f3e7;
+	--color-warning: #8a5a00;
+	--color-warning-soft: #fbefd2;
 
 	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--radius: 0.75rem;
+	--radius-small: 0.5rem;
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 1rem;
@@ -38,6 +47,13 @@
 		--color-primary: #e0b47c;
 		--color-primary-contrast: #16120e;
 		--color-focus: #f0c890;
+		--color-border-strong: #8f7d6b;
+		--color-danger: #ff9e94;
+		--color-danger-soft: #3d1d1a;
+		--color-success: #8fd6a3;
+		--color-success-soft: #1d3324;
+		--color-warning: #f2c46d;
+		--color-warning-soft: #3a2e14;
 	}
 }
 
@@ -81,6 +97,31 @@ p {
 
 a {
 	color: var(--color-primary);
+}
+
+/* Form controls; :where() keeps the specificity at zero, so components can override anything. */
+:where(input:not([type='checkbox'], [type='radio']), textarea, select) {
+	width: 100%;
+	min-height: 2.75rem;
+	padding: var(--space-2) 0.75rem;
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-small);
+	background: var(--color-surface);
+	color: inherit;
+	font: inherit;
+}
+
+:where(textarea) {
+	resize: vertical;
+}
+
+:where(input[type='checkbox'], input[type='radio']) {
+	accent-color: var(--color-primary);
+}
+
+:where([aria-invalid='true']) {
+	border-color: var(--color-danger);
+	box-shadow: 0 0 0 1px var(--color-danger);
 }
 
 :focus-visible {

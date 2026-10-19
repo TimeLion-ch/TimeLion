@@ -19,5 +19,15 @@
 	"notFound.text": "This page does not exist. Check the link or go back to the start page.",
 	"notFound.back": "Back to the start page",
 	"footer.copyright": "© {year} TimeLion",
-	"footer.source": "Source code"
+	"footer.source": "Source code",
+	"form.optional": "optional",
+	"error.network": "The server can't be reached. Check your connection and try again.",
+	"error.rateLimited": "Too many requests in a short time. Wait a while, then try again.",
+	"error.notFound": "This poll doesn't exist (any more). It has expired or was deleted.",
+	"error.pollClosed": "This poll is closed. Responses can no longer be changed.",
+	"error.tooManyResponses": "This poll has reached the maximum number of responses.",
+	"error.tooLarge": "The poll is too large. Shorten the texts or remove some dates.",
+	"error.invalidExpiry": "The expiry date was not accepted. Pick an earlier date.",
+	"error.unreadable": "The link is incomplete or wrong: the key in it doesn't decrypt the poll.",
+	"error.generic": "Something went wrong. Please try again."
 }
