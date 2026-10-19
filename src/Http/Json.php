@@ -42,10 +42,7 @@ final class Json
 			throw ApiError::unsupportedMediaType();
 		}
 
-		$body = (string) $request->getBody();
-		if (strlen($body) > $maxBytes) {
-			throw ApiError::payloadTooLarge();
-		}
+		$body = self::readBody($request, $maxBytes);
 
 		try {
 			$data = json_decode($body, true, self::MAX_DEPTH, JSON_THROW_ON_ERROR);
@@ -58,5 +55,36 @@ final class Json
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Reads at most $maxBytes + 1 bytes, so an oversized body is rejected without being held in memory.
+	 *
+	 * @throws ApiError 413
+	 */
+	private static function readBody(ServerRequestInterface $request, int $maxBytes): string
+	{
+		$contentLength = $request->getHeaderLine('Content-Length');
+		if (preg_match('/^\d+$/D', $contentLength) === 1 && (int) $contentLength > $maxBytes) {
+			throw ApiError::payloadTooLarge();
+		}
+
+		$stream = $request->getBody();
+		if ($stream->isSeekable()) {
+			$stream->rewind();
+		}
+		$body = '';
+		while (strlen($body) <= $maxBytes && !$stream->eof()) {
+			$chunk = $stream->read($maxBytes + 1 - strlen($body));
+			if ($chunk === '') {
+				break;
+			}
+			$body .= $chunk;
+		}
+		if (strlen($body) > $maxBytes) {
+			throw ApiError::payloadTooLarge();
+		}
+
+		return $body;
 	}
 }

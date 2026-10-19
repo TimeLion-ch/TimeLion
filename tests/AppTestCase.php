@@ -10,11 +10,17 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Slim\App;
 use Slim\Psr7\Factory\ServerRequestFactory;
+use TimeLion\Clock;
 use TimeLion\Config;
+use TimeLion\Http\Middleware\PurgeMiddleware;
 use TimeLion\Kernel;
+use TimeLion\Maintenance\Purger;
+use TimeLion\Repository\PollRepository;
+use TimeLion\Repository\ResponseRepository;
 
 /**
- * Base class for HTTP-level tests: boots the real app against a freshly migrated test database (see TestDatabase).
+ * Base class for HTTP-level tests: boots the real app against a freshly migrated test database (see TestDatabase)
+ * and a FrozenClock, with random purging switched off.
  */
 abstract class AppTestCase extends TestCase
 {
@@ -23,17 +29,82 @@ abstract class AppTestCase extends TestCase
 
 	protected PDO $pdo;
 
+	protected FrozenClock $clock;
+
+	/** REMOTE_ADDR of the requests this test sends. */
+	protected string $clientIp = '192.0.2.1';
+
 	protected function setUp(): void
 	{
 		$this->app = Kernel::createApp(self::config());
 		$this->pdo = TestDatabase::migrated();
+		$this->clock = new FrozenClock();
 		$this->app->getContainer()->set(PDO::class, $this->pdo);
+		$this->app->getContainer()->set(Clock::class, $this->clock);
+		// No random purges in tests; PurgeMiddlewareTest turns them on.
+		$this->app->getContainer()->set(
+			PurgeMiddleware::class,
+			static fn(Purger $purger): PurgeMiddleware => new PurgeMiddleware($purger, static fn(): bool => false),
+		);
 	}
 
 	protected function tearDown(): void
 	{
 		// PHPUnit keeps test case objects until the run ends; don't keep every app and connection alive with them.
-		unset($this->app, $this->pdo);
+		unset($this->app, $this->pdo, $this->clock);
+	}
+
+	/**
+	 * Creates a poll through the API, open for a week.
+	 *
+	 * @return array{id: string, adminToken: string}
+	 */
+	protected function newPoll(): array
+	{
+		$response = $this->requestJson('POST', '/api/polls', [
+			'ciphertext' => Fixtures::ciphertext('P'),
+			'expiresAt' => $this->clock->now() + 7 * 86400,
+		]);
+		self::assertSame(201, $response->getStatusCode());
+		$data = self::json($response);
+		self::assertIsString($data['id'] ?? null);
+		self::assertIsString($data['adminToken'] ?? null);
+
+		return ['id' => $data['id'], 'adminToken' => $data['adminToken']];
+	}
+
+	/**
+	 * Adds a response through the API.
+	 *
+	 * @return array{id: string, editToken: string}
+	 */
+	protected function newResponse(string $pollId, ?string $ciphertext = null): array
+	{
+		$response = $this->requestJson('POST', '/api/polls/' . $pollId . '/responses', ['ciphertext' => $ciphertext ?? Fixtures::ciphertext('R')]);
+		self::assertSame(201, $response->getStatusCode());
+		$data = self::json($response);
+		self::assertIsString($data['id'] ?? null);
+		self::assertIsString($data['editToken'] ?? null);
+
+		return ['id' => $data['id'], 'editToken' => $data['editToken']];
+	}
+
+	/**
+	 * @return array{Authorization: string}
+	 */
+	protected static function bearer(string $token): array
+	{
+		return ['Authorization' => 'Bearer ' . $token];
+	}
+
+	protected function polls(): PollRepository
+	{
+		return new PollRepository($this->pdo);
+	}
+
+	protected function responses(): ResponseRepository
+	{
+		return new ResponseRepository($this->pdo);
 	}
 
 	protected static function config(string $env = Config::ENV_PROD): Config
@@ -46,7 +117,7 @@ abstract class AppTestCase extends TestCase
 	 */
 	protected function request(string $method, string $path, ?string $body = null, array $headers = []): ResponseInterface
 	{
-		$request = (new ServerRequestFactory())->createServerRequest($method, $path);
+		$request = (new ServerRequestFactory())->createServerRequest($method, $path, ['REMOTE_ADDR' => $this->clientIp]);
 		if ($body !== null) {
 			$request->getBody()->write($body);
 			$request = $request->withHeader('Content-Type', 'application/json');
@@ -59,6 +130,15 @@ abstract class AppTestCase extends TestCase
 	}
 
 	/**
+	 * @param array<mixed> $data
+	 * @param array<string, string> $headers
+	 */
+	protected function requestJson(string $method, string $path, array $data, array $headers = []): ResponseInterface
+	{
+		return $this->request($method, $path, json_encode($data, JSON_THROW_ON_ERROR), $headers);
+	}
+
+	/**
 	 * @return array<mixed>
 	 */
 	protected static function json(ResponseInterface $response): array
@@ -68,5 +148,29 @@ abstract class AppTestCase extends TestCase
 		self::assertIsArray($data);
 
 		return $data;
+	}
+
+	protected static function errorCode(ResponseInterface $response): mixed
+	{
+		$error = self::json($response)['error'] ?? null;
+
+		return is_array($error) ? ($error['code'] ?? null) : null;
+	}
+
+	/**
+	 * Asserts an error response and returns its message.
+	 */
+	protected static function assertError(int $status, string $code, ResponseInterface $response): string
+	{
+		self::assertSame($status, $response->getStatusCode(), (string) $response->getBody());
+		if ($status === 401) {
+			self::assertSame('Bearer', $response->getHeaderLine('WWW-Authenticate'), 'a 401 needs a challenge');
+		}
+		$error = self::json($response)['error'] ?? null;
+		self::assertIsArray($error);
+		self::assertSame($code, $error['code'] ?? null);
+		self::assertIsString($error['message'] ?? null);
+
+		return $error['message'];
 	}
 }

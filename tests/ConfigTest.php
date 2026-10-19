@@ -20,6 +20,13 @@ final class ConfigTest extends TestCase
 		self::assertSame('sqlite::memory:', $config->dbDsn);
 		self::assertNull($config->dbUser);
 		self::assertFalse($config->isDev());
+		self::assertNull($config->trustedProxyHeader);
+	}
+
+	public function testTrustedProxyHeader(): void
+	{
+		self::assertSame('X-Forwarded-For', Config::fromArray(['trusted_proxy_header' => 'X-Forwarded-For'] + self::valid())->trustedProxyHeader);
+		self::assertNull(Config::fromArray(['trusted_proxy_header' => null] + self::valid())->trustedProxyHeader);
 	}
 
 	public function testExampleConfigIsValidOnceSecretIsSet(): void
@@ -42,6 +49,9 @@ final class ConfigTest extends TestCase
 		yield 'non-string user' => [['db' => ['dsn' => 'sqlite::memory:', 'user' => 5]] + self::valid(), '"db.user"'];
 		yield 'short secret' => [['secret' => 'too-short'] + self::valid(), '"secret"'];
 		yield 'missing secret' => [['secret' => null] + self::valid(), '"secret"'];
+		yield 'empty proxy header' => [['trusted_proxy_header' => ''] + self::valid(), '"trusted_proxy_header"'];
+		yield 'proxy header with colon' => [['trusted_proxy_header' => 'X-Real-IP: 1.2.3.4'] + self::valid(), '"trusted_proxy_header"'];
+		yield 'proxy header not a string' => [['trusted_proxy_header' => true] + self::valid(), '"trusted_proxy_header"'];
 	}
 
 	/**

@@ -15,11 +15,15 @@ use Throwable;
  */
 final class ApiError extends RuntimeException
 {
+	/**
+	 * @param array<string, string> $headers extra response headers, e.g. Retry-After
+	 */
 	public function __construct(
 		public readonly int $status,
 		public readonly string $errorCode,
 		string $message,
 		?Throwable $previous = null,
+		public readonly array $headers = [],
 	) {
 		parent::__construct($message, 0, $previous);
 	}
@@ -31,7 +35,8 @@ final class ApiError extends RuntimeException
 
 	public static function unauthorized(string $message = 'Missing or malformed access token.'): self
 	{
-		return new self(401, 'unauthorized', $message);
+		// RFC 9110 requires a challenge with every 401. Browsers only prompt for Basic and similar schemes, not Bearer.
+		return new self(401, 'unauthorized', $message, null, ['WWW-Authenticate' => 'Bearer']);
 	}
 
 	public static function forbidden(string $message = 'The access token is not valid for this resource.'): self
@@ -59,8 +64,11 @@ final class ApiError extends RuntimeException
 		return new self(415, 'unsupported_media_type', $message);
 	}
 
-	public static function tooManyRequests(string $message = 'Too many requests. Try again later.'): self
+	/**
+	 * @param int $retryAfter seconds until the client may try again
+	 */
+	public static function tooManyRequests(int $retryAfter): self
 	{
-		return new self(429, 'too_many_requests', $message);
+		return new self(429, 'too_many_requests', 'Too many requests. Try again later.', null, ['Retry-After' => (string) $retryAfter]);
 	}
 }

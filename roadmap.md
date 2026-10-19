@@ -27,8 +27,9 @@ If a task grows beyond roughly 400 changed lines (not counting tests and lock fi
 | D4  | IDs are 128-bit random lowercase hex (32 chars); tokens are 256-bit random base64url (43 chars); the server stores SHA-256 hashes of tokens | 2026-10-18 |
 | D5  | German copy uses Swiss spelling (ss) and the informal "du"; German is the default language                                              | 2026-10-18 |
 | D6  | The webspace offers FTP only, so the deploy uses FTP with mandatory TLS (lftp) and runs migrations via a one-time-token endpoint. Replaces "rsync over SSH" in D1 | 2026-10-18 |
+| D7  | The maximum poll lifetime (`MAX_LIFETIME`) is 365 days: `expiresAt` may be at most 365 days after the request that sets it        | 2026-10-19 |
 
-Decisions still open are marked 🧭 on the tasks that need them: maximum poll lifetime (1.1), legal page details (4.2), security contact (4.3), license (4.5), notifications (6.6).
+Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), security contact (4.3), license (4.5), notifications (6.6).
 
 ## Phase 0: Foundation ✅
 
@@ -41,7 +42,7 @@ Decisions still open are marked 🧭 on the tasks that need them: maximum poll l
 
 **The API contract for this phase.** Implement it exactly, and copy each endpoint into `docs/api.md` when it lands.
 
-- **Limits:** poll ciphertext ≤ 64 KiB; response ciphertext ≤ 16 KiB; request body ≤ 80 KiB; at most 500 responses per poll; `expiresAt` must be later than now and at most `MAX_LIFETIME` from now (see 1.1).
+- **Limits:** poll ciphertext ≤ 64 KiB; response ciphertext ≤ 16 KiB; request body ≤ 80 KiB; at most 500 responses per poll; `expiresAt` must be later than now and at most `MAX_LIFETIME` (365 days, D7) from now.
 - **Ciphertext format** (the server checks it but never decrypts): `^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{24,}$`
 - **ID format** (check it before any database access): `^[0-9a-f]{32}$`. Malformed IDs return `404 not_found`, the same as unknown or expired ones.
 
@@ -52,56 +53,67 @@ Tasks:
   - Add a MariaDB service container (`mariadb:11`) to the `backend` job, as one extra matrix entry rather than for every PHP version.
   - Done when: CI runs the suite on SQLite and MariaDB and both pass.
   - Next: `AppTestCase` puts a migrated `TestDatabase` connection into the container (`$this->pdo`); repository tests use `TestDatabase::migrated()`.
-- [ ] **1.1 Schema: polls and responses** 🧭 confirm the maximum poll lifetime (proposal: 180 days)
+- [x] **1.1 Schema: polls and responses** — done 2026-10-19 (D7: 365 days)
   - Add `migrations/0001_create_polls_and_responses.sql` with the tables from CLAUDE.md → Data model, an index on `polls(expires_at)`, an index on `responses(poll_id)`, and the foreign key with `ON DELETE CASCADE`.
   - Add a `TimeLion\Polls\Limits` class (or similar) holding the contract limits above as constants, including `MAX_LIFETIME`.
   - Done when: the migration applies on SQLite and MariaDB (1.0), and a test proves the cascade delete.
-- [ ] **1.2 Security primitives**
+  - Next: the limits are constants on `TimeLion\Polls\Limits`; `MAX_LIFETIME` is in seconds.
+- [x] **1.2 Security primitives** — done 2026-10-19
   - `src/Security/Random.php`: `id()` returns 32 lowercase hex characters; `token()` returns 43 base64url characters (32 bytes).
   - `src/Security/TokenHash.php`: `hash(string $token)` returns the SHA-256 hex digest; `matches(string $token, string $hash)` compares with `hash_equals`.
   - `src/Http/BearerToken.php`: `fromRequest(ServerRequestInterface)` accepts `Bearer` case-insensitively, requires the base64url charset and length 43, and otherwise throws `ApiError::unauthorized()`.
   - Add a `src/Clock.php` interface with `SystemClock`, registered in the Kernel container, and a `FrozenClock` for tests.
   - Done when: unit tests cover formats, hash matching, and header parsing edge cases (missing, `Basic …`, wrong length, extra spaces).
   - `TokenHash` and `BearerToken` already exist with tests (added early for 5.4); `Random` and the clock are still open.
-- [ ] **1.3 Input validation helpers**
+  - Next: `Random` is static; `AppTestCase` registers a `FrozenClock` as `$this->clock` (default 1,800,000,000, `advance()` moves it).
+- [x] **1.3 Input validation helpers** — done 2026-10-19
   - Add validation helpers (e.g. `src/Http/Validate.php`): `ciphertext($value, int $maxBytes)`, `expiresAt($value, int $now)`, `bool($value, string $field)`.
   - They throw `ApiError::badRequest` with `invalid_ciphertext`, `ciphertext_too_large`, `invalid_expiry` or `invalid_field`.
   - Done when: data-provider tests cover valid and invalid values, including wrong types, empty strings and boundary sizes.
-- [ ] **1.4 Repositories**
+  - Next: patterns need the `D` modifier, or `$` also matches before a trailing newline (the ID check in 1.6 too).
+- [x] **1.4 Repositories** — done 2026-10-19
   - `src/Repository/PollRepository.php` and `src/Repository/ResponseRepository.php`, using PDO with prepared statements: `insert`, `findActive($id, $now)` (which excludes expired polls), `update`, `delete`, `setClosed`, `countForPoll`, `listForPoll`.
   - Done when: repository tests cover expiry filtering, the cascade and ordering.
-- [ ] **1.5 `POST /api/polls`: create a poll**
+  - Next: `PollRepository::update(Poll)` writes all mutable columns including `closed_at`, so there is no separate `setClosed`. Response lookups always take `(pollId, id)`. Entities are `Polls\Poll` and `Polls\PollResponse`; `tests/Fixtures.php` builds them.
+- [x] **1.5 `POST /api/polls`: create a poll** — done 2026-10-19
   - Body: `{ "ciphertext": string, "expiresAt": int }`. Response: **201** `{ "id", "adminToken", "createdAt", "expiresAt" }`.
   - The server generates the ID and the admin token and stores only the token's hash.
   - Done when: HTTP tests cover success, every validation error, an oversized body and a wrong content type, and `docs/api.md` is updated.
-- [ ] **1.6 `GET /api/polls/{id}`: read a poll**
+  - Next: `AppTestCase` has `requestJson()`, `assertError()` and `errorCode()`; docs/api.md has a "Formats and limits" table.
+- [x] **1.6 `GET /api/polls/{id}`: read a poll** — done 2026-10-19
   - **200** `{ "id", "ciphertext", "createdAt", "updatedAt", "expiresAt", "closedAt": int|null, "responses": [{ "id", "ciphertext", "createdAt", "updatedAt" }] }`, with responses ordered by `createdAt`.
   - Unknown, malformed and expired IDs all return **404** `not_found` and are indistinguishable.
   - Done when: tests cover expired polls and responses belonging to other polls not leaking in.
-- [ ] **1.7 Admin: `PATCH` and `DELETE /api/polls/{id}`**
+  - Next: actions get route arguments as `array<string, string> $args`; `Validate::id($args['id'] ?? '')` throws the 404. `AppTestCase` has `polls()` and `responses()`.
+- [x] **1.7 Admin: `PATCH` and `DELETE /api/polls/{id}`** — done 2026-10-19
   - Both require `Authorization: Bearer <adminToken>`.
   - `PATCH` body: any subset of `ciphertext`, `expiresAt` and `closed` (bool). It returns **200** `{ "id", "updatedAt", "expiresAt", "closedAt" }`.
   - `DELETE` returns **204** and cascades.
   - Errors: 401 for a missing or malformed token, 403 for a wrong token, 404 for an unknown or expired poll, 400 for an empty patch.
   - Done when: every status code has a test, and tokens are compared via `TokenHash::matches`.
-- [ ] **1.8 Responses: `POST /api/polls/{id}/responses`, `PUT` and `DELETE /api/polls/{id}/responses/{responseId}`**
+  - Next: `Http\PollAccess` does the lookup and token check in the documented order (401 → 404 → 403); the body comes after. `AppTestCase` has `newPoll()` and `bearer()`.
+- [x] **1.8 Responses: `POST /api/polls/{id}/responses`, `PUT` and `DELETE /api/polls/{id}/responses/{responseId}`** — done 2026-10-19
   - `POST` body `{ "ciphertext" }` returns **201** `{ "id", "editToken", "createdAt" }`. It returns **409** `poll_closed` if the poll is closed, and **409** `too_many_responses` once the limit is reached.
   - `PUT` requires the response's edit token. Body `{ "ciphertext" }` returns **200** `{ "id", "updatedAt" }`, or **409** `poll_closed`.
   - `DELETE` returns **204** and accepts either the response's edit token **or** the poll's admin token. It is allowed even when the poll is closed.
   - Done when: tests cover every path, including a response ID that belongs to a different poll (404).
-- [ ] **1.9 Purging expired polls**
+  - Next: the response limit is count-then-insert, not atomic, so concurrent requests can pass it by a few (documented). Every write endpoint now exists for 1.10 to rate-limit.
+- [x] **1.9 Purging expired polls** — done 2026-10-19
   - Add `src/Maintenance/Purger.php`, which deletes expired polls (cascading) and stale rate-limit rows (after 1.10). It runs with about 2% probability per API request (middleware, after the handler) and via `bin/purge.php` for hosts that offer cron.
   - Done when: tests with `FrozenClock` pass, and README and CLAUDE.md mention the optional cron job.
-- [ ] **1.10 Rate limiting**
+  - Next: `Purger::purge()` returns counts per table (`['polls' => n]`); 1.10 adds the rate-limit rows. `AppTestCase` turns random purging off. `Kernel::createContainer()` serves bin/ scripts.
+- [x] **1.10 Rate limiting** — done 2026-10-19
   - Migration: `rate_limits(bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)`.
   - Bucket: `HMAC-SHA256(dailyKey, action + "|" + clientIp)`, where `dailyKey = HMAC-SHA256(config secret, "rate-limit|" + UTC date)`.
   - The client IP comes from `REMOTE_ADDR`. Add an optional config `trusted_proxy_header` (default: none) for hosts behind a reverse proxy.
   - Fixed windows per hour: creating polls 20, writing responses 60, admin writes 120. Keep these as tunable constants.
   - Over the limit: **429** `too_many_requests` with a `Retry-After` header.
   - Done when: tests cover reaching the limit, the window reset and independent IPs, and assert that the table never contains a raw IP.
-- [ ] **1.11 API hardening review**
+  - Next: each write action calls `RateLimiter::hit()` first, so rejected requests count too. `ApiError` can carry headers (`Retry-After`). Response deletes by the admin count as `write_response`.
+- [x] **1.11 API hardening review** — done 2026-10-19
   - For every endpoint, check that limits are enforced, IDs are validated before database access, errors are consistent, no user data reaches the logs, and `docs/api.md` is complete. Add `composer audit --no-dev` to CI.
   - Done when: findings are fixed or added as tasks.
+  - Fixed: bodies were read into memory in full before the size check (a 300 MB body exhausted `memory_limit`), now at most 80 KiB + 1 byte is read; 401 now carries `WWW-Authenticate: Bearer`; `index.php` turns off `display_errors` and call arguments in PHP's own traces; CLAUDE.md asks for `display_errors` off on the host. No other findings; IPv6 rate limits are in the Inbox.
 
 ## Phase 2: Frontend logic (no UI yet)
 
@@ -206,4 +218,4 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 
 Things noticed during other tasks, to be sorted into the phases above:
 
-- _(empty)_
+- Rate limits (1.10) count IPv6 clients per full address, so a client with a /64 prefix can switch addresses to get fresh limits. Consider counting IPv6 per /64 (the bucket would then cover the prefix, not the address).

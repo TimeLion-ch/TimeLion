@@ -59,6 +59,7 @@ final class BearerTokenTest extends TestCase
 		} catch (ApiError $error) {
 			self::assertSame(401, $error->status);
 			self::assertSame('unauthorized', $error->errorCode);
+			self::assertSame(['WWW-Authenticate' => 'Bearer'], $error->headers);
 		}
 	}
 
