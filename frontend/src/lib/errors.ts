@@ -12,6 +12,8 @@ const byCode = new Map<string, MessageKey>([
 	['too_many_responses', 'error.tooManyResponses'],
 	['ciphertext_too_large', 'error.tooLarge'],
 	['invalid_expiry', 'error.invalidExpiry'],
+	['unauthorized', 'error.forbidden'],
+	['forbidden', 'error.forbidden'],
 ]);
 
 export function errorMessage(error: unknown): MessageKey {

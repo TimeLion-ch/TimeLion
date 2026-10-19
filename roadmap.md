@@ -186,7 +186,7 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [ ] **3.6 Admin panel** (visible when the fragment contains an admin token)
   - Edit texts and options (warn that removing an option drops its votes), close and reopen, choose the final option, delete individual responses, and delete the poll (with confirmation).
   - Split, because it is over 400 lines:
-    - [ ] **3.6a Admin actions**: close and reopen, choose the final option, delete individual (also unreadable) responses, delete the poll, and both links.
+    - [x] **3.6a Admin actions**: close and reopen, choose the final option, delete individual (also unreadable) responses, delete the poll, and both links. — done 2026-10-19
     - [ ] **3.6b Editing the poll**: the poll form for an existing poll, keeping option IDs (and so the votes) of unchanged options, with a warning before options with votes are removed.
 - [ ] **3.7 Responsive and accessible results table**
   - Mobile layout (options as a list showing your own vote and the totals), keyboard navigation, screen-reader labels, and enough contrast in both themes.

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AdminPanel from '../components/AdminPanel.svelte';
 	import Button from '../components/Button.svelte';
 	import Notice from '../components/Notice.svelte';
 	import ResultsTable from '../components/ResultsTable.svelte';
@@ -23,6 +24,7 @@
 	let loaded = $state<LoadedPoll | null>(null);
 	let problem = $state<LoadProblem | null>(fragment === null ? 'noKey' : null);
 	let loading = $state(false);
+	let deleted = $state(false);
 	/** The responses this browser can edit. */
 	let own = $state<ResponseRef[]>([]);
 
@@ -51,6 +53,12 @@
 		}
 	}
 
+	function onDeleted() {
+		deviceStore.forget(id);
+		deleted = true;
+		window.scrollTo(0, 0);
+	}
+
 	function dismissShare() {
 		replaceState({});
 		window.scrollTo(0, 0);
@@ -63,7 +71,13 @@
 	<title>{poll === undefined ? t('poll.title') : poll.title} · {t('app.name')}</title>
 </svelte:head>
 
-{#if router.state.created && fragment?.adminToken !== undefined}
+{#if deleted}
+	<section class="problem" role="status">
+		<h1>{t('poll.deletedTitle')}</h1>
+		<p>{t('poll.deletedText')}</p>
+		<Button href="/">{t('notFound.back')}</Button>
+	</section>
+{:else if router.state.created && fragment?.adminToken !== undefined}
 	<ShareScreen {id} pollKey={fragment.key} adminToken={fragment.adminToken} ondone={dismissShare} />
 {:else if problem !== null}
 	<section class="problem">
@@ -121,6 +135,17 @@
 			<Notice kind="warning">
 				<p>{t('poll.skipped', { count: loaded.skippedResponses.length })}</p>
 			</Notice>
+		{/if}
+
+		{#if fragment?.adminToken !== undefined}
+			<AdminPanel
+				{id}
+				pollKey={fragment.key}
+				adminToken={fragment.adminToken}
+				{loaded}
+				onchange={load}
+				ondeleted={onDeleted}
+			/>
 		{/if}
 
 		<section aria-labelledby="results-title">

@@ -10,6 +10,7 @@ describe('errorMessage', () => {
 		expect(errorMessage(new ApiError(429, 'too_many_requests', ''))).toBe('error.rateLimited');
 		expect(errorMessage(new ApiError(404, 'not_found', ''))).toBe('error.notFound');
 		expect(errorMessage(new ApiError(409, 'poll_closed', ''))).toBe('error.pollClosed');
+		expect(errorMessage(new ApiError(403, 'forbidden', ''))).toBe('error.forbidden');
 	});
 
 	it('falls back to a generic message', () => {
