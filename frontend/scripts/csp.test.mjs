@@ -61,6 +61,7 @@ describe('htaccess.template', () => {
 			'script-src': ['{{CSP_SCRIPT_SRC}}'],
 			'style-src': ['{{CSP_STYLE_SRC}}'],
 			'img-src': ["'self'", 'data:'],
+			'font-src': ['data:'],
 			'connect-src': ["'self'"],
 			'base-uri': ["'none'"],
 			'form-action': ["'self'"],
