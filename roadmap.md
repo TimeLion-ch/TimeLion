@@ -134,9 +134,10 @@ Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
   - `participantLink(origin, id, key)`, `adminLink(origin, id, key, adminToken)` and `parseFragment(hash)`, which returns `{ key, adminToken?, edit?: { responseId, editToken } } | null`. The fragment uses `URLSearchParams` syntax.
   - Done when: tests cover round trips, garbage fragments, and missing or invalid keys.
   - Next: `editLink(origin, id, key, responseId, editToken)` exists too, for 3.10. `parseFragment` returns null only for a missing or malformed key; a malformed admin token or edit part is left out. `KEY_PATTERN` (crypto.ts) now also rejects a non-canonical last character.
-- [ ] **2.4 Typed API client for the Phase 1 endpoints** (`src/lib/api.ts`). Depends on 1.5–1.8.
+- [x] **2.4 Typed API client for the Phase 1 endpoints** (`src/lib/api.ts`). Depends on 1.5–1.8. — done 2026-10-19
   - Add `api.createPoll`, `getPoll`, `updatePoll`, `deletePoll`, `createResponse`, `updateResponse` and `deleteResponse`, typed to match `docs/api.md`.
   - Done when: each has a test with mocked `fetch`.
+  - Next: methods take positional arguments, tokens before bodies (`updatePoll(id, adminToken, patch)`, `updateResponse(pollId, responseId, editToken, ciphertext)`). A malformed ID rejects with `ApiError(404, 'not_found')` without a request. `serverLimits` mirrors `Limits.php`, including `maxLifetime` for 3.1.
 - [ ] **2.5 Poll service** (`src/lib/polls.ts`). Depends on 2.1–2.4.
   - High-level functions that combine crypto, model and API: `createPoll(poll, expiresAt)` returns `{ id, key, adminToken }`; `loadPoll(id, key)` returns `{ poll, responses, skippedResponses, meta }`, skipping invalid responses instead of failing; also `submitResponse`, `editResponse`, `deleteResponse`, `updatePoll`, `closePoll` and `deletePoll`.
   - Done when: tests with a mocked API layer cover the full encrypt → store → load → decrypt path.
