@@ -138,9 +138,10 @@ Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
   - Add `api.createPoll`, `getPoll`, `updatePoll`, `deletePoll`, `createResponse`, `updateResponse` and `deleteResponse`, typed to match `docs/api.md`.
   - Done when: each has a test with mocked `fetch`.
   - Next: methods take positional arguments, tokens before bodies (`updatePoll(id, adminToken, patch)`, `updateResponse(pollId, responseId, editToken, ciphertext)`). A malformed ID rejects with `ApiError(404, 'not_found')` without a request. `serverLimits` mirrors `Limits.php`, including `maxLifetime` for 3.1.
-- [ ] **2.5 Poll service** (`src/lib/polls.ts`). Depends on 2.1–2.4.
+- [x] **2.5 Poll service** (`src/lib/polls.ts`). Depends on 2.1–2.4. — done 2026-10-19
   - High-level functions that combine crypto, model and API: `createPoll(poll, expiresAt)` returns `{ id, key, adminToken }`; `loadPoll(id, key)` returns `{ poll, responses, skippedResponses, meta }`, skipping invalid responses instead of failing; also `submitResponse`, `editResponse`, `deleteResponse`, `updatePoll`, `closePoll` and `deletePoll`.
   - Done when: tests with a mocked API layer cover the full encrypt → store → load → decrypt path.
+  - Next: the functions take the key as the base64url string from the link or device store. `submitResponse(id, key, poll, response)` and `editResponse(id, key, poll, responseId, editToken, response)` need the loaded poll for its option IDs; documents are validated before encrypting (`TypeError` if invalid). `loadPoll` throws `UnreadablePollError` for a malformed or wrong key or an invalid poll; `skippedResponses` holds the IDs of unreadable responses. `reopenPoll` exists next to `closePoll`.
 - [ ] **2.6 Device store** (`src/lib/deviceStore.ts`)
   - Polls this browser created or answered: `{ id, key, adminToken?, responses: [{ id, editToken }], title?, savedAt }[]`, stored under the localStorage key `timelion.polls.v1` via `storage.ts`. Also `forget(id)` and `forgetAll()`.
   - Done when: tests (with an in-memory storage stub) also show that corrupted stored content is ignored.

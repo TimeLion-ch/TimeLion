@@ -84,7 +84,7 @@ frontend/
   src/App.svelte            route switch
   src/components/           shared UI components
   src/routes/               one component per page
-  src/lib/                  logic: api.ts, base64url.ts, crypto.ts, i18n.ts + i18n.svelte.ts, links.ts, model.ts, routes.ts + router.svelte.ts, storage.ts
+  src/lib/                  logic: api.ts, base64url.ts, crypto.ts, i18n.ts + i18n.svelte.ts, links.ts, model.ts, polls.ts, routes.ts + router.svelte.ts, storage.ts
   src/locales/{de,en}.json  translations (de.json is the source of truth for keys)
 migrations/                 NNNN_description.sql
 public/                     web root on the server
