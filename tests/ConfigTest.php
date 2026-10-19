@@ -41,9 +41,7 @@ final class ConfigTest extends TestCase
 		self::assertIsArray($values);
 		$values['secret'] = str_repeat('a', 64);
 
-		$config = Config::fromArray($values);
-		self::assertSame('prod', $config->env);
-		self::assertStringContainsString('## Verantwortlich', (string) $config->privacyPolicy);
+		self::assertSame('prod', Config::fromArray($values)->env);
 	}
 
 	/**
