@@ -58,13 +58,14 @@ Tasks:
   - Add a `TimeLion\Polls\Limits` class (or similar) holding the contract limits above as constants, including `MAX_LIFETIME`.
   - Done when: the migration applies on SQLite and MariaDB (1.0), and a test proves the cascade delete.
   - Next: the limits are constants on `TimeLion\Polls\Limits`; `MAX_LIFETIME` is in seconds.
-- [ ] **1.2 Security primitives**
+- [x] **1.2 Security primitives** — done 2026-10-19
   - `src/Security/Random.php`: `id()` returns 32 lowercase hex characters; `token()` returns 43 base64url characters (32 bytes).
   - `src/Security/TokenHash.php`: `hash(string $token)` returns the SHA-256 hex digest; `matches(string $token, string $hash)` compares with `hash_equals`.
   - `src/Http/BearerToken.php`: `fromRequest(ServerRequestInterface)` accepts `Bearer` case-insensitively, requires the base64url charset and length 43, and otherwise throws `ApiError::unauthorized()`.
   - Add a `src/Clock.php` interface with `SystemClock`, registered in the Kernel container, and a `FrozenClock` for tests.
   - Done when: unit tests cover formats, hash matching, and header parsing edge cases (missing, `Basic …`, wrong length, extra spaces).
   - `TokenHash` and `BearerToken` already exist with tests (added early for 5.4); `Random` and the clock are still open.
+  - Next: `Random` is static; `AppTestCase` registers a `FrozenClock` as `$this->clock` (default 1,800,000,000, `advance()` moves it).
 - [ ] **1.3 Input validation helpers**
   - Add validation helpers (e.g. `src/Http/Validate.php`): `ciphertext($value, int $maxBytes)`, `expiresAt($value, int $now)`, `bool($value, string $field)`.
   - They throw `ApiError::badRequest` with `invalid_ciphertext`, `ciphertext_too_large`, `invalid_expiry` or `invalid_field`.

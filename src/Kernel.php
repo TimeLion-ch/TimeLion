@@ -30,6 +30,7 @@ final class Kernel
 		$builder = new ContainerBuilder();
 		$builder->addDefinitions([
 			Config::class => $config,
+			Clock::class => static fn(): Clock => new SystemClock(),
 			PDO::class => static fn(Config $config): PDO => ConnectionFactory::create($config),
 			Migrator::class => static fn(PDO $pdo): Migrator => new Migrator($pdo, dirname(__DIR__) . '/migrations'),
 			DeployToken::class => static fn(): DeployToken => new DeployToken(dirname(__DIR__) . '/var/deploy-token'),

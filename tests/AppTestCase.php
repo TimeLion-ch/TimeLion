@@ -10,11 +10,13 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Slim\App;
 use Slim\Psr7\Factory\ServerRequestFactory;
+use TimeLion\Clock;
 use TimeLion\Config;
 use TimeLion\Kernel;
 
 /**
- * Base class for HTTP-level tests: boots the real app against a freshly migrated test database (see TestDatabase).
+ * Base class for HTTP-level tests: boots the real app against a freshly migrated test database (see TestDatabase)
+ * and a FrozenClock.
  */
 abstract class AppTestCase extends TestCase
 {
@@ -23,17 +25,21 @@ abstract class AppTestCase extends TestCase
 
 	protected PDO $pdo;
 
+	protected FrozenClock $clock;
+
 	protected function setUp(): void
 	{
 		$this->app = Kernel::createApp(self::config());
 		$this->pdo = TestDatabase::migrated();
+		$this->clock = new FrozenClock();
 		$this->app->getContainer()->set(PDO::class, $this->pdo);
+		$this->app->getContainer()->set(Clock::class, $this->clock);
 	}
 
 	protected function tearDown(): void
 	{
 		// PHPUnit keeps test case objects until the run ends; don't keep every app and connection alive with them.
-		unset($this->app, $this->pdo);
+		unset($this->app, $this->pdo, $this->clock);
 	}
 
 	protected static function config(string $env = Config::ENV_PROD): Config
