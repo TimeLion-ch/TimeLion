@@ -227,8 +227,10 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [x] **4.5 License** — done 2026-10-19 (D9: AGPL-3.0)
   - AGPL also requires anyone running a modified public instance to publish their changes, which fits a hosted privacy tool. Update LICENSE, `composer.json`, `frontend/package.json` and the README to match.
   - Next: LICENSE is the text from gnu.org. The footer's "Source code" link is how timelion.ch offers the source (section 13); the README tells self-hosters to point it to their version.
-- [ ] **4.6 Logo license**
+- [x] **4.6 Logo license** — done 2026-10-19
   - The lion SVG comes from SVG Repo. Check its license, then add attribution or replace it.
+  - Result: it is ["Lion"](https://www.svgrepo.com/svg/484717/lion) (collection "SVG Vector", uploaded by SVG Repo), CC0 per its page (checked in the archived copy of 2025-07-11, as the live page blocks scripts). No attribution is needed; the source is noted in `Logo.svelte` and the README anyway. The favicon and `docs/logo_sm.png` are the same lion.
+  - Next: CC0 means anyone may use this lion too, so it can't become an exclusive trademark, and the CC0 label rests on SVG Repo's word alone. If TimeLion ever needs a protectable mark, commission its own logo.
 - [ ] **4.7 Brand font (optional)**
   - The old site used Plus Jakarta Sans (OFL) from Google Fonts. If it's wanted, embed a Latin-subset WOFF2 as a data URI (which needs `font-src data:` in the CSP). Budget: at most 40 KiB.
 
