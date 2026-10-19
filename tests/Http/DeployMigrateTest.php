@@ -32,6 +32,7 @@ final class DeployMigrateTest extends AppTestCase
 		if (is_file($this->tokenFile)) {
 			unlink($this->tokenFile);
 		}
+		parent::tearDown();
 	}
 
 	public function testIsNotFoundWhileNoDeployIsPending(): void

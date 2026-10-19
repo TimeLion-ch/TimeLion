@@ -47,10 +47,11 @@ Decisions still open are marked 🧭 on the tasks that need them: maximum poll l
 
 Tasks:
 
-- [ ] **1.0 Run the backend tests against MySQL in CI**
+- [x] **1.0 Run the backend tests against MySQL in CI** — done 2026-10-19
   - Production runs MySQL/MariaDB, so the schema must be tested there too. Let `AppTestCase` and the repository tests read an optional `TIMELION_TEST_DSN` (plus user and password) environment variable, defaulting to `sqlite::memory:`. When MySQL is used, recreate the schema between tests.
   - Add a MariaDB service container (`mariadb:11`) to the `backend` job, as one extra matrix entry rather than for every PHP version.
   - Done when: CI runs the suite on SQLite and MariaDB and both pass.
+  - Next: `AppTestCase` puts a migrated `TestDatabase` connection into the container (`$this->pdo`); repository tests use `TestDatabase::migrated()`.
 - [ ] **1.1 Schema: polls and responses** 🧭 confirm the maximum poll lifetime (proposal: 180 days)
   - Add `migrations/0001_create_polls_and_responses.sql` with the tables from CLAUDE.md → Data model, an index on `polls(expires_at)`, an index on `responses(poll_id)`, and the foreign key with `ON DELETE CASCADE`.
   - Add a `TimeLion\Polls\Limits` class (or similar) holding the contract limits above as constants, including `MAX_LIFETIME`.
