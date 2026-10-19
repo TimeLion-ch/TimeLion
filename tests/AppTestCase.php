@@ -31,6 +31,9 @@ abstract class AppTestCase extends TestCase
 
 	protected FrozenClock $clock;
 
+	/** REMOTE_ADDR of the requests this test sends. */
+	protected string $clientIp = '192.0.2.1';
+
 	protected function setUp(): void
 	{
 		$this->app = Kernel::createApp(self::config());
@@ -114,7 +117,7 @@ abstract class AppTestCase extends TestCase
 	 */
 	protected function request(string $method, string $path, ?string $body = null, array $headers = []): ResponseInterface
 	{
-		$request = (new ServerRequestFactory())->createServerRequest($method, $path);
+		$request = (new ServerRequestFactory())->createServerRequest($method, $path, ['REMOTE_ADDR' => $this->clientIp]);
 		if ($body !== null) {
 			$request->getBody()->write($body);
 			$request = $request->withHeader('Content-Type', 'application/json');

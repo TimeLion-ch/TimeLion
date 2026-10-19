@@ -14,6 +14,8 @@ use TimeLion\Http\Validate;
 use TimeLion\Polls\Limits;
 use TimeLion\Polls\PollResponse;
 use TimeLion\Repository\ResponseRepository;
+use TimeLion\Security\RateLimit;
+use TimeLion\Security\RateLimiter;
 
 /**
  * PUT /api/polls/{id}/responses/{responseId} – the participant replaces their response, with its edit token.
@@ -21,6 +23,7 @@ use TimeLion\Repository\ResponseRepository;
 final readonly class UpdateResponseAction
 {
 	public function __construct(
+		private RateLimiter $rateLimiter,
 		private PollAccess $access,
 		private ResponseRepository $responses,
 		private Clock $clock,
@@ -31,6 +34,7 @@ final readonly class UpdateResponseAction
 	 */
 	public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
 	{
+		$this->rateLimiter->hit(RateLimit::WriteResponse, $request);
 		$now = $this->clock->now();
 		[$poll, $existing] = $this->access->responseForEditor($request, $args['id'] ?? '', $args['responseId'] ?? '', $now);
 		$body = Json::decodeBody($request, Limits::MAX_BODY_BYTES);

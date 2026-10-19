@@ -52,7 +52,7 @@ final class PurgeScriptTest extends TestCase
 		[$exitCode, $output] = $this->runPurgeScript($configFile);
 
 		self::assertSame(0, $exitCode, $output);
-		self::assertSame("Deleted 1 expired poll(s).\n", $output);
+		self::assertSame("Deleted 1 expired poll(s) and 0 stale rate-limit row(s).\n", $output);
 		self::assertNull($polls->findActive($expired->id, 0));
 		self::assertNotNull($polls->findActive($active->id, time()));
 	}

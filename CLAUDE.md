@@ -57,7 +57,7 @@ Browser ── fetch /api/* ──────▶ Apache ─▶ public/api/index
   - A compromised server could ship malicious JavaScript that leaks keys. The strict CSP, open source code and (later) reproducible builds reduce this risk but cannot remove it.
   - Losing the link means losing the poll. There is no recovery, by design.
 
-### Data model (polls and responses: `migrations/0001`; rate_limits: planned, roadmap 1.10)
+### Data model (`migrations/0001`: polls and responses; `migrations/0002`: rate_limits)
 
 ```
 polls       (id CHAR(32) PK, admin_token_hash CHAR(64), ciphertext MEDIUMTEXT,
@@ -98,11 +98,11 @@ src/                        PHP, namespace TimeLion\
   Clock.php, SystemClock.php  injected time (tests use tests/FrozenClock.php)
   Database/                 ConnectionFactory, Migrator
   Deploy/                   DeployToken (one-time token for the FTP deploy's migration call)
-  Http/                     ApiError, BearerToken, ErrorHandler, Json, Validate, PollAccess, Middleware/, Action/
-  Maintenance/              Purger (deletes expired polls)
+  Http/                     ApiError, BearerToken, ClientIp, ErrorHandler, Json, Validate, PollAccess, Middleware/, Action/
+  Maintenance/              Purger (deletes expired polls and stale rate-limit rows)
   Polls/                    Poll, PollResponse, Limits (the API contract's limits)
-  Repository/               PollRepository, ResponseRepository (all SQL lives here)
-  Security/                 Random (IDs, tokens), TokenHash
+  Repository/               PollRepository, ResponseRepository, RateLimitRepository (all SQL lives here)
+  Security/                 Random (IDs, tokens), TokenHash, RateLimit + RateLimiter (HMAC buckets, no IPs)
 tests/                      PHPUnit; AppTestCase boots the app on a freshly migrated TestDatabase; Fixtures
 var/                        runtime data (SQLite database, caches), gitignored
 ```

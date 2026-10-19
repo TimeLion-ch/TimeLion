@@ -68,6 +68,11 @@ final class ErrorHandler implements ErrorHandlerInterface
 		if ($exception instanceof HttpMethodNotAllowedException) {
 			$response = $response->withHeader('Allow', implode(', ', $exception->getAllowedMethods()));
 		}
+		if ($exception instanceof ApiError) {
+			foreach ($exception->headers as $name => $value) {
+				$response = $response->withHeader($name, $value);
+			}
+		}
 
 		return $response;
 	}

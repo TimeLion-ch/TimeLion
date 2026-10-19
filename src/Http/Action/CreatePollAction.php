@@ -13,6 +13,8 @@ use TimeLion\Polls\Limits;
 use TimeLion\Polls\Poll;
 use TimeLion\Repository\PollRepository;
 use TimeLion\Security\Random;
+use TimeLion\Security\RateLimit;
+use TimeLion\Security\RateLimiter;
 use TimeLion\Security\TokenHash;
 
 /**
@@ -22,12 +24,14 @@ use TimeLion\Security\TokenHash;
 final readonly class CreatePollAction
 {
 	public function __construct(
+		private RateLimiter $rateLimiter,
 		private PollRepository $polls,
 		private Clock $clock,
 	) {}
 
 	public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
 	{
+		$this->rateLimiter->hit(RateLimit::CreatePoll, $request);
 		$body = Json::decodeBody($request, Limits::MAX_BODY_BYTES);
 		$now = $this->clock->now();
 		$ciphertext = Validate::ciphertext($body['ciphertext'] ?? null, Limits::MAX_POLL_CIPHERTEXT_BYTES);

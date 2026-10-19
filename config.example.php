@@ -26,4 +26,10 @@ return [
 	//   php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
 	// Changing it later only resets rate-limit counters.
 	'secret' => '',
+
+	// Rate limits count requests per client IP (only an HMAC of it is stored). Behind a reverse proxy or load
+	// balancer, every request seems to come from the proxy, so name the header it passes the client IP in, e.g.
+	// 'X-Forwarded-For' (its last entry is used) or 'X-Real-IP'. Leave null unless clients can only reach the app
+	// through that proxy: otherwise anyone can send the header and pick their own address.
+	'trusted_proxy_header' => null,
 ];

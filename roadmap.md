@@ -102,13 +102,14 @@ Tasks:
   - Add `src/Maintenance/Purger.php`, which deletes expired polls (cascading) and stale rate-limit rows (after 1.10). It runs with about 2% probability per API request (middleware, after the handler) and via `bin/purge.php` for hosts that offer cron.
   - Done when: tests with `FrozenClock` pass, and README and CLAUDE.md mention the optional cron job.
   - Next: `Purger::purge()` returns counts per table (`['polls' => n]`); 1.10 adds the rate-limit rows. `AppTestCase` turns random purging off. `Kernel::createContainer()` serves bin/ scripts.
-- [ ] **1.10 Rate limiting**
+- [x] **1.10 Rate limiting** — done 2026-10-19
   - Migration: `rate_limits(bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)`.
   - Bucket: `HMAC-SHA256(dailyKey, action + "|" + clientIp)`, where `dailyKey = HMAC-SHA256(config secret, "rate-limit|" + UTC date)`.
   - The client IP comes from `REMOTE_ADDR`. Add an optional config `trusted_proxy_header` (default: none) for hosts behind a reverse proxy.
   - Fixed windows per hour: creating polls 20, writing responses 60, admin writes 120. Keep these as tunable constants.
   - Over the limit: **429** `too_many_requests` with a `Retry-After` header.
   - Done when: tests cover reaching the limit, the window reset and independent IPs, and assert that the table never contains a raw IP.
+  - Next: each write action calls `RateLimiter::hit()` first, so rejected requests count too. `ApiError` can carry headers (`Retry-After`). Response deletes by the admin count as `write_response`.
 - [ ] **1.11 API hardening review**
   - For every endpoint, check that limits are enforced, IDs are validated before database access, errors are consistent, no user data reaches the logs, and `docs/api.md` is complete. Add `composer audit --no-dev` to CI.
   - Done when: findings are fixed or added as tasks.
@@ -216,4 +217,4 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 
 Things noticed during other tasks, to be sorted into the phases above:
 
-- _(empty)_
+- Rate limits (1.10) count IPv6 clients per full address, so a client with a /64 prefix can switch addresses to get fresh limits. Consider counting IPv6 per /64 (the bucket would then cover the prefix, not the address).

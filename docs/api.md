@@ -27,15 +27,28 @@ This file documents **implemented** endpoints only. Planned endpoints are specif
 
 The limits are constants in `src/Polls/Limits.php`. Unknown fields in a request body are ignored.
 
+### Rate limits
+
+Write endpoints count requests per client IP in fixed one-hour windows that start at full UTC hours. Every request counts, including rejected ones. Reading (`GET`) is not limited.
+
+| Limit            | Requests per hour | Endpoints                                                      |
+| ---------------- | ----------------- | -------------------------------------------------------------- |
+| `create_poll`    | 20                | `POST /api/polls`                                              |
+| `write_response` | 60                | `POST`, `PUT` and `DELETE` on `/api/polls/{id}/responses…`     |
+| `admin_write`    | 120               | `PATCH` and `DELETE /api/polls/{id}`                           |
+
+Over the limit, the API answers **429** `too_many_requests` with a `Retry-After` header: the seconds until the next window. The server stores no IP addresses, only an HMAC of action and IP under a key that changes every UTC day. Behind a reverse proxy, set `trusted_proxy_header` in config.php (see config.example.php). The limits are in `src/Security/RateLimit.php`.
+
 ### Order of checks
 
 When several things are wrong with a request, the first failing check decides the error:
 
-1. token format: `401` (endpoints that need a token)
-2. path IDs, then the poll and response lookup: `404`
-3. token match: `403`
-4. body: `415`, `413`, then `400`
-5. the poll's state: `409`
+1. rate limit: `429` (write endpoints)
+2. token format: `401` (endpoints that need a token)
+3. path IDs, then the poll and response lookup: `404`
+4. token match: `403`
+5. body: `415`, `413`, then `400`
+6. the poll's state: `409`
 
 ### Errors
 
@@ -95,7 +108,7 @@ Authorization is a one-time token: the deploy job uploads the token's SHA-256 he
 
 ### `POST /api/polls`
 
-Creates a poll. The client encrypts the poll document with a new poll key before sending it; the server generates the ID and the admin token, and stores only the token's SHA-256 hash.
+Creates a poll. The client encrypts the poll document with a new poll key before sending it; the server generates the ID and the admin token, and stores only the token's SHA-256 hash. Rate limit: `create_poll`.
 
 **Request**
 
@@ -153,7 +166,7 @@ A poll is expired from the second `expiresAt` on.
 
 ### `PATCH /api/polls/{id}`
 
-Changes a poll. Requires `Authorization: Bearer <adminToken>`.
+Changes a poll. Requires `Authorization: Bearer <adminToken>`. Rate limit: `admin_write`.
 
 **Request:** any non-empty subset of these fields.
 
@@ -189,7 +202,7 @@ All fields are validated before anything is stored, so an invalid field changes 
 
 ### `DELETE /api/polls/{id}`
 
-Deletes a poll and all its responses, immediately and for good. Requires `Authorization: Bearer <adminToken>`. No request body.
+Deletes a poll and all its responses, immediately and for good. Requires `Authorization: Bearer <adminToken>`. No request body. Rate limit: `admin_write`.
 
 **204**, with no body.
 
@@ -201,7 +214,7 @@ Deletes a poll and all its responses, immediately and for good. Requires `Author
 
 ### `POST /api/polls/{id}/responses`
 
-Adds a response. No token is needed: anyone with the link can answer. The client encrypts the response with the poll key; the server generates the response ID and an edit token, and stores only the token's SHA-256 hash.
+Adds a response. No token is needed: anyone with the link can answer. The client encrypts the response with the poll key; the server generates the response ID and an edit token, and stores only the token's SHA-256 hash. Rate limit: `write_response`.
 
 **Request**
 
@@ -232,7 +245,7 @@ The limit check and the insert are not atomic: concurrent requests can take a po
 
 ### `PUT /api/polls/{id}/responses/{responseId}`
 
-Replaces a response. Requires `Authorization: Bearer <editToken>` of this response; the admin token is not accepted.
+Replaces a response. Requires `Authorization: Bearer <editToken>` of this response; the admin token is not accepted. Rate limit: `write_response`.
 
 **Request:** `{ "ciphertext": "v1.…" }`, at most 16 KiB.
 
@@ -254,7 +267,7 @@ Replaces a response. Requires `Authorization: Bearer <editToken>` of this respon
 
 ### `DELETE /api/polls/{id}/responses/{responseId}`
 
-Deletes a response. Requires `Authorization: Bearer <token>` with either the response's edit token or the poll's admin token. Allowed on closed polls. No request body.
+Deletes a response. Requires `Authorization: Bearer <token>` with either the response's edit token or the poll's admin token. Allowed on closed polls. No request body. Rate limit: `write_response`.
 
 **204**, with no body.
 

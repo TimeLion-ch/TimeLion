@@ -14,6 +14,8 @@ use TimeLion\Http\Validate;
 use TimeLion\Polls\Limits;
 use TimeLion\Polls\Poll;
 use TimeLion\Repository\PollRepository;
+use TimeLion\Security\RateLimit;
+use TimeLion\Security\RateLimiter;
 
 /**
  * PATCH /api/polls/{id} – the admin replaces the ciphertext, moves the expiry, or closes or reopens the poll.
@@ -24,6 +26,7 @@ final readonly class UpdatePollAction
 	private const array FIELDS = ['ciphertext', 'expiresAt', 'closed'];
 
 	public function __construct(
+		private RateLimiter $rateLimiter,
 		private PollAccess $access,
 		private PollRepository $polls,
 		private Clock $clock,
@@ -34,6 +37,7 @@ final readonly class UpdatePollAction
 	 */
 	public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
 	{
+		$this->rateLimiter->hit(RateLimit::AdminWrite, $request);
 		$now = $this->clock->now();
 		$poll = $this->access->pollForAdmin($request, $args['id'] ?? '', $now);
 

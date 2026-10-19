@@ -4,7 +4,7 @@
 declare(strict_types=1);
 
 /*
- * Deletes expired polls (with their responses). API requests already do this now and then; on hosts with cron,
+ * Deletes expired polls (with their responses) and stale rate-limit rows. API requests already do this now and then; on hosts with cron,
  * run it regularly as well, e.g. hourly:  php bin/purge.php
  */
 
@@ -30,4 +30,4 @@ try {
 	exit(1);
 }
 
-echo sprintf('Deleted %d expired poll(s).', $deleted['polls']), PHP_EOL;
+echo sprintf('Deleted %d expired poll(s) and %d stale rate-limit row(s).', $deleted['polls'], $deleted['rateLimits']), PHP_EOL;

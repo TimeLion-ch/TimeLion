@@ -17,12 +17,16 @@ final readonly class Config
 
 	public const int MIN_SECRET_LENGTH = 32;
 
+	/**
+	 * @param string|null $trustedProxyHeader the header a reverse proxy passes the client IP in (see config.example.php)
+	 */
 	public function __construct(
 		public string $env,
 		public string $dbDsn,
 		public ?string $dbUser,
 		public ?string $dbPassword,
 		public string $secret,
+		public ?string $trustedProxyHeader = null,
 	) {
 		if (!in_array($env, [self::ENV_DEV, self::ENV_PROD], true)) {
 			throw new InvalidArgumentException(sprintf('Config "env" must be "%s" or "%s".', self::ENV_DEV, self::ENV_PROD));
@@ -32,6 +36,9 @@ final readonly class Config
 		}
 		if (strlen($secret) < self::MIN_SECRET_LENGTH) {
 			throw new InvalidArgumentException(sprintf('Config "secret" must be at least %d characters long.', self::MIN_SECRET_LENGTH));
+		}
+		if ($trustedProxyHeader !== null && preg_match('/^[A-Za-z0-9-]+$/D', $trustedProxyHeader) !== 1) {
+			throw new InvalidArgumentException('Config "trusted_proxy_header" must be a header name such as "X-Forwarded-For", or null.');
 		}
 	}
 
@@ -75,6 +82,7 @@ final readonly class Config
 			dbUser: self::nullableString($db, 'user', 'db.user'),
 			dbPassword: self::nullableString($db, 'password', 'db.password'),
 			secret: self::string($values, 'secret', 'secret'),
+			trustedProxyHeader: self::nullableString($values, 'trusted_proxy_header', 'trusted_proxy_header'),
 		);
 	}
 

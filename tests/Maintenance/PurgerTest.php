@@ -7,6 +7,7 @@ namespace TimeLion\Tests\Maintenance;
 use PHPUnit\Framework\TestCase;
 use TimeLion\Maintenance\Purger;
 use TimeLion\Repository\PollRepository;
+use TimeLion\Repository\RateLimitRepository;
 use TimeLion\Repository\ResponseRepository;
 use TimeLion\Tests\Fixtures;
 use TimeLion\Tests\FrozenClock;
@@ -16,6 +17,7 @@ final class PurgerTest extends TestCase
 {
 	private PollRepository $polls;
 	private ResponseRepository $responses;
+	private RateLimitRepository $rateLimits;
 	private FrozenClock $clock;
 	private Purger $purger;
 
@@ -24,13 +26,15 @@ final class PurgerTest extends TestCase
 		$pdo = TestDatabase::migrated();
 		$this->polls = new PollRepository($pdo);
 		$this->responses = new ResponseRepository($pdo);
-		$this->clock = new FrozenClock();
-		$this->purger = new Purger($this->polls, $this->clock);
+		$this->rateLimits = new RateLimitRepository($pdo);
+		// The start of a window, so tests can step into the previous and next ones.
+		$this->clock = new FrozenClock(1_800_000_000 - 1_800_000_000 % 3600);
+		$this->purger = new Purger($this->polls, $this->rateLimits, $this->clock);
 	}
 
 	protected function tearDown(): void
 	{
-		unset($this->polls, $this->responses, $this->purger);
+		unset($this->polls, $this->responses, $this->rateLimits, $this->purger);
 	}
 
 	public function testDeletesExpiredPollsWithTheirResponses(): void
@@ -44,7 +48,7 @@ final class PurgerTest extends TestCase
 			$this->responses->insert(Fixtures::response($poll->id));
 		}
 
-		self::assertSame(['polls' => 2], $this->purger->purge());
+		self::assertSame(['polls' => 2, 'rateLimits' => 0], $this->purger->purge());
 
 		self::assertSame(0, $this->responses->countForPoll($expired->id));
 		self::assertSame(0, $this->responses->countForPoll($expiringNow->id));
@@ -57,10 +61,10 @@ final class PurgerTest extends TestCase
 		$closed = Fixtures::poll(closedAt: $this->clock->now(), expiresAt: $this->clock->now() + 60);
 		$this->polls->insert($closed);
 
-		self::assertSame(['polls' => 0], $this->purger->purge());
+		self::assertSame(0, $this->purger->purge()['polls']);
 
 		$this->clock->advance(60);
-		self::assertSame(['polls' => 1], $this->purger->purge());
+		self::assertSame(1, $this->purger->purge()['polls']);
 	}
 
 	public function testDeletesRowsInsteadOfHidingThem(): void
@@ -72,6 +76,17 @@ final class PurgerTest extends TestCase
 		$this->purger->purge();
 
 		self::assertNull($this->polls->findActive($poll->id, 0), 'the row is gone, not just filtered out');
-		self::assertSame(['polls' => 0], $this->purger->purge());
+		self::assertSame(0, $this->purger->purge()['polls']);
+	}
+
+	public function testDeletesRateLimitRowsOfPastWindows(): void
+	{
+		$now = $this->clock->now();
+		$this->rateLimits->hit(str_repeat('a', 64), $now - 3600);
+		$this->rateLimits->hit(str_repeat('b', 64), $now - 7200);
+		$this->rateLimits->hit(str_repeat('c', 64), $now);
+
+		self::assertSame(['polls' => 0, 'rateLimits' => 2], $this->purger->purge());
+		self::assertSame(2, $this->rateLimits->hit(str_repeat('c', 64), $now), 'the current window keeps its count');
 	}
 }
