@@ -65,6 +65,15 @@ abstract class AppTestCase extends TestCase
 	}
 
 	/**
+	 * @param array<mixed> $data
+	 * @param array<string, string> $headers
+	 */
+	protected function requestJson(string $method, string $path, array $data, array $headers = []): ResponseInterface
+	{
+		return $this->request($method, $path, json_encode($data, JSON_THROW_ON_ERROR), $headers);
+	}
+
+	/**
 	 * @return array<mixed>
 	 */
 	protected static function json(ResponseInterface $response): array
@@ -74,5 +83,26 @@ abstract class AppTestCase extends TestCase
 		self::assertIsArray($data);
 
 		return $data;
+	}
+
+	protected static function errorCode(ResponseInterface $response): mixed
+	{
+		$error = self::json($response)['error'] ?? null;
+
+		return is_array($error) ? ($error['code'] ?? null) : null;
+	}
+
+	/**
+	 * Asserts an error response and returns its message.
+	 */
+	protected static function assertError(int $status, string $code, ResponseInterface $response): string
+	{
+		self::assertSame($status, $response->getStatusCode(), (string) $response->getBody());
+		$error = self::json($response)['error'] ?? null;
+		self::assertIsArray($error);
+		self::assertSame($code, $error['code'] ?? null);
+		self::assertIsString($error['message'] ?? null);
+
+		return $error['message'];
 	}
 }

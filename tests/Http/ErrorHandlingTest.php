@@ -106,11 +106,4 @@ final class ErrorHandlingTest extends AppTestCase
 		});
 		$handler((new ServerRequestFactory())->createServerRequest('GET', '/api/x'), $exception, false, true, true);
 	}
-
-	private static function errorCode(\Psr\Http\Message\ResponseInterface $response): mixed
-	{
-		$error = self::json($response)['error'] ?? null;
-
-		return is_array($error) ? ($error['code'] ?? null) : null;
-	}
 }

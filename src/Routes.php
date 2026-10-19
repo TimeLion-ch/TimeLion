@@ -6,6 +6,7 @@ namespace TimeLion;
 
 use DI\Container;
 use Slim\App;
+use TimeLion\Http\Action\CreatePollAction;
 use TimeLion\Http\Action\DeployMigrateAction;
 use TimeLion\Http\Action\HealthAction;
 
@@ -22,5 +23,7 @@ final class Routes
 	{
 		$app->get('/health', HealthAction::class);
 		$app->post('/deploy/migrate', DeployMigrateAction::class);
+
+		$app->post('/polls', CreatePollAction::class);
 	}
 }

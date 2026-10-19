@@ -13,6 +13,20 @@ This file documents **implemented** endpoints only. Planned endpoints are specif
 - Every response carries `Cache-Control: no-store` and restrictive security headers.
 - The server never decrypts anything. Ciphertext fields are opaque strings in the envelope format described in [CLAUDE.md](../CLAUDE.md#encryption-design).
 
+### Formats and limits
+
+| What                 | Rule                                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| ID                   | `^[0-9a-f]{32}$`. A malformed ID in a path returns `404 not_found`, like an unknown or expired one |
+| Token                | `^[A-Za-z0-9_-]{43}$` (32 random bytes, base64url without padding)                           |
+| Ciphertext           | `^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{24,}$`. The server checks the format, never the content |
+| Poll ciphertext      | at most 65,536 bytes (64 KiB)                                                                |
+| Response ciphertext  | at most 16,384 bytes (16 KiB)                                                                |
+| Request body         | at most 81,920 bytes (80 KiB), otherwise `413`                                               |
+| `expiresAt`          | an integer, later than now and at most 365 days (31,536,000 seconds) from now                |
+
+The limits are constants in `src/Polls/Limits.php`. Unknown fields in a request body are ignored.
+
 ### Errors
 
 Every error has the same shape:
@@ -68,3 +82,35 @@ Authorization is a one-time token: the deploy job uploads the token's SHA-256 he
 | 401    | `unauthorized`     | Token missing or malformed                                                                   |
 | 403    | `forbidden`        | Token does not match the pending hash. The file stays, so the right token still works        |
 | 500    | `migration_failed` | The token file could not be deleted, or a migration failed. `message` gives the reason       |
+
+### `POST /api/polls`
+
+Creates a poll. The client encrypts the poll document with a new poll key before sending it; the server generates the ID and the admin token, and stores only the token's SHA-256 hash.
+
+**Request**
+
+```json
+{ "ciphertext": "v1.AAECAwQFBgcICQoL.…", "expiresAt": 1800604800 }
+```
+
+| Field        | Type    | Rules                                                     |
+| ------------ | ------- | --------------------------------------------------------- |
+| `ciphertext` | string  | ciphertext envelope, at most 64 KiB                       |
+| `expiresAt`  | integer | Unix seconds, later than now, at most 365 days from now   |
+
+**201**
+
+```json
+{ "id": "3f2a…(32 hex)", "adminToken": "…(43 base64url)", "createdAt": 1800000000, "expiresAt": 1800604800 }
+```
+
+`adminToken` appears only in this response: the server can't show it again. The client keeps it in the admin link (`#k={key}&a={adminToken}`).
+
+| Status | `code`                   | When                                                   |
+| ------ | ------------------------ | ------------------------------------------------------ |
+| 400    | `invalid_json`           | Body is not a JSON object                              |
+| 400    | `invalid_ciphertext`     | `ciphertext` is missing, not a string, or not an envelope |
+| 400    | `ciphertext_too_large`   | `ciphertext` is longer than 64 KiB                     |
+| 400    | `invalid_expiry`         | `expiresAt` is missing, not an integer, not in the future, or more than 365 days ahead |
+| 413    | `payload_too_large`      | Body is larger than 80 KiB                             |
+| 415    | `unsupported_media_type` | Body is not `application/json`                         |

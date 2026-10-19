@@ -75,10 +75,11 @@ Tasks:
   - `src/Repository/PollRepository.php` and `src/Repository/ResponseRepository.php`, using PDO with prepared statements: `insert`, `findActive($id, $now)` (which excludes expired polls), `update`, `delete`, `setClosed`, `countForPoll`, `listForPoll`.
   - Done when: repository tests cover expiry filtering, the cascade and ordering.
   - Next: `PollRepository::update(Poll)` writes all mutable columns including `closed_at`, so there is no separate `setClosed`. Response lookups always take `(pollId, id)`. Entities are `Polls\Poll` and `Polls\PollResponse`; `tests/Fixtures.php` builds them.
-- [ ] **1.5 `POST /api/polls`: create a poll**
+- [x] **1.5 `POST /api/polls`: create a poll** — done 2026-10-19
   - Body: `{ "ciphertext": string, "expiresAt": int }`. Response: **201** `{ "id", "adminToken", "createdAt", "expiresAt" }`.
   - The server generates the ID and the admin token and stores only the token's hash.
   - Done when: HTTP tests cover success, every validation error, an oversized body and a wrong content type, and `docs/api.md` is updated.
+  - Next: `AppTestCase` has `requestJson()`, `assertError()` and `errorCode()`; docs/api.md has a "Formats and limits" table.
 - [ ] **1.6 `GET /api/polls/{id}`: read a poll**
   - **200** `{ "id", "ciphertext", "createdAt", "updatedAt", "expiresAt", "closedAt": int|null, "responses": [{ "id", "ciphertext", "createdAt", "updatedAt" }] }`, with responses ordered by `createdAt`.
   - Unknown, malformed and expired IDs all return **404** `not_found` and are indistinguishable.
