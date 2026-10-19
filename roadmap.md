@@ -80,10 +80,11 @@ Tasks:
   - The server generates the ID and the admin token and stores only the token's hash.
   - Done when: HTTP tests cover success, every validation error, an oversized body and a wrong content type, and `docs/api.md` is updated.
   - Next: `AppTestCase` has `requestJson()`, `assertError()` and `errorCode()`; docs/api.md has a "Formats and limits" table.
-- [ ] **1.6 `GET /api/polls/{id}`: read a poll**
+- [x] **1.6 `GET /api/polls/{id}`: read a poll** — done 2026-10-19
   - **200** `{ "id", "ciphertext", "createdAt", "updatedAt", "expiresAt", "closedAt": int|null, "responses": [{ "id", "ciphertext", "createdAt", "updatedAt" }] }`, with responses ordered by `createdAt`.
   - Unknown, malformed and expired IDs all return **404** `not_found` and are indistinguishable.
   - Done when: tests cover expired polls and responses belonging to other polls not leaking in.
+  - Next: actions get route arguments as `array<string, string> $args`; `Validate::id($args['id'] ?? '')` throws the 404. `AppTestCase` has `polls()` and `responses()`.
 - [ ] **1.7 Admin: `PATCH` and `DELETE /api/polls/{id}`**
   - Both require `Authorization: Bearer <adminToken>`.
   - `PATCH` body: any subset of `ciphertext`, `expiresAt` and `closed` (bool). It returns **200** `{ "id", "updatedAt", "expiresAt", "closedAt" }`.

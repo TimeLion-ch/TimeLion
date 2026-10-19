@@ -13,6 +13,8 @@ use Slim\Psr7\Factory\ServerRequestFactory;
 use TimeLion\Clock;
 use TimeLion\Config;
 use TimeLion\Kernel;
+use TimeLion\Repository\PollRepository;
+use TimeLion\Repository\ResponseRepository;
 
 /**
  * Base class for HTTP-level tests: boots the real app against a freshly migrated test database (see TestDatabase)
@@ -40,6 +42,16 @@ abstract class AppTestCase extends TestCase
 	{
 		// PHPUnit keeps test case objects until the run ends; don't keep every app and connection alive with them.
 		unset($this->app, $this->pdo, $this->clock);
+	}
+
+	protected function polls(): PollRepository
+	{
+		return new PollRepository($this->pdo);
+	}
+
+	protected function responses(): ResponseRepository
+	{
+		return new ResponseRepository($this->pdo);
 	}
 
 	protected static function config(string $env = Config::ENV_PROD): Config

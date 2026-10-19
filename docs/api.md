@@ -114,3 +114,29 @@ Creates a poll. The client encrypts the poll document with a new poll key before
 | 400    | `invalid_expiry`         | `expiresAt` is missing, not an integer, not in the future, or more than 365 days ahead |
 | 413    | `payload_too_large`      | Body is larger than 80 KiB                             |
 | 415    | `unsupported_media_type` | Body is not `application/json`                         |
+
+### `GET /api/polls/{id}`
+
+Returns a poll with all its responses. No token is needed: anyone with the link can read the poll, and the server returns only ciphertext.
+
+**200**
+
+```json
+{
+  "id": "3f2a…",
+  "ciphertext": "v1.…",
+  "createdAt": 1800000000,
+  "updatedAt": 1800000000,
+  "expiresAt": 1800604800,
+  "closedAt": null,
+  "responses": [{ "id": "9c1d…", "ciphertext": "v1.…", "createdAt": 1800000100, "updatedAt": 1800000100 }]
+}
+```
+
+`closedAt` is `null` while the poll is open. `responses` is ordered by `createdAt`, oldest first; responses created in the same second are ordered by `id`.
+
+| Status | `code`      | When                                                                                         |
+| ------ | ----------- | -------------------------------------------------------------------------------------------- |
+| 404    | `not_found` | The ID is malformed, unknown or expired. The three cases return identical responses       |
+
+A poll is expired from the second `expiresAt` on.

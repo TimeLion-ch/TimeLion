@@ -15,6 +15,36 @@ final class ValidateTest extends TestCase
 	private const string IV = 'AAECAwQFBgcICQoL';
 	private const int NOW = 1_800_000_000;
 
+	public function testAcceptsLowercaseHexIds(): void
+	{
+		self::assertSame('0123456789abcdef0123456789abcdef', Validate::id('0123456789abcdef0123456789abcdef'));
+	}
+
+	/**
+	 * @return iterable<string, array{string}>
+	 */
+	public static function malformedIds(): iterable
+	{
+		yield 'empty' => [''];
+		yield 'uppercase' => ['0123456789ABCDEF0123456789ABCDEF'];
+		yield 'too short' => [str_repeat('a', 31)];
+		yield 'too long' => [str_repeat('a', 33)];
+		yield 'not hex' => [str_repeat('z', 32)];
+		yield 'trailing newline' => [str_repeat('a', 32) . "\n"];
+	}
+
+	#[DataProvider('malformedIds')]
+	public function testMalformedIdsAreNotFound(string $id): void
+	{
+		try {
+			Validate::id($id);
+			self::fail('Expected ApiError');
+		} catch (ApiError $error) {
+			self::assertSame(404, $error->status);
+			self::assertSame('not_found', $error->errorCode);
+		}
+	}
+
 	/**
 	 * @return iterable<string, array{string}>
 	 */

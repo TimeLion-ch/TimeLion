@@ -7,7 +7,8 @@ namespace TimeLion\Http;
 use TimeLion\Polls\Limits;
 
 /**
- * Validates decoded request fields. Each method returns the typed value or throws ApiError 400.
+ * Validates path IDs and decoded request fields. Each method returns the typed value or throws ApiError: 404 for IDs,
+ * 400 for fields.
  *
  * Error messages name the field, never its value.
  */
@@ -19,6 +20,22 @@ final class Validate
 	 * a trailing newline.
 	 */
 	public const string CIPHERTEXT_PATTERN = '/^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{24,}$/D';
+
+	public const string ID_PATTERN = '/^[0-9a-f]{32}$/D';
+
+	/**
+	 * Checks an ID from the path before it reaches the database.
+	 *
+	 * @throws ApiError not_found (404): a malformed ID is reported exactly like an unknown or expired one
+	 */
+	public static function id(string $value): string
+	{
+		if (preg_match(self::ID_PATTERN, $value) !== 1) {
+			throw ApiError::notFound();
+		}
+
+		return $value;
+	}
 
 	/**
 	 * @throws ApiError invalid_ciphertext or ciphertext_too_large
