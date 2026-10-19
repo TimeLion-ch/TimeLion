@@ -157,6 +157,10 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
   - On the home page, replace the "being rebuilt" notice with a "Create poll" button.
   - Submit: `polls.createPoll`, save to the device store, then navigate to the admin link.
   - Done when: creating a poll works end to end against `composer serve`.
+  - Split, because it is over 400 lines:
+    - [ ] **3.1a Building blocks**: colour tokens and base form styles in `app.css`, `Button`, `TextField` and `Notice`, plus `lib/dates.ts` (date arithmetic and timezones), `lib/format.ts` (`Intl` formatting) and `lib/errors.ts` (error messages).
+    - [ ] **3.1b Month calendar**: `components/Calendar.svelte`, multi-select and keyboard accessible.
+    - [ ] **3.1c The `/new` page**: `lib/pollDraft.ts` (form state → poll document and expiry), `PollForm`, `CreatePoll`, the route and the button on the home page.
 - [ ] **3.2 Create a poll: time slots**
   - Optional time ranges per date ("all day" by default), a "copy times to all dates" action, and the timezone shown (default: the browser's).
 - [ ] **3.3 Share screen**
