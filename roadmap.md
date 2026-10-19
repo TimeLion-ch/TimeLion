@@ -192,8 +192,9 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [x] **3.7 Responsive and accessible results table** — done 2026-10-19
   - Mobile layout (options as a list showing your own vote and the totals), keyboard navigation, screen-reader labels, and enough contrast in both themes.
   - Next: below 40rem `ResultsList` replaces `ResultsTable` (CSS only); comments are in `CommentList`. The table's scroll box is a focusable region, so the keyboard can scroll it. Text contrast is at least 4.5:1 and the focus ring and form borders at least 3:1 in both themes.
-- [ ] **3.8 My polls** (route `/my`, plus a "Meine Umfragen / My polls" link in the header, as in the old navbar)
+- [x] **3.8 My polls** (route `/my`, plus a "Meine Umfragen / My polls" link in the header, as in the old navbar) — done 2026-10-19
   - List the polls from the device store (decrypting titles lazily), with open, forget and forget all. Explain that this list exists only in this browser.
+  - Next: only entries without a stored title are loaded, one after another, so the server doesn't see every poll of this browser at once. Below 25rem the header shows the logo without the name.
 - [ ] **3.9 Calendar export**
   - Download the final option as an `.ics` file (generated in the browser as a Blob, RFC 5545, with correct timezones), offered as an "Add to calendar" button on closed polls.
 - [ ] **3.10 Personal edit link**

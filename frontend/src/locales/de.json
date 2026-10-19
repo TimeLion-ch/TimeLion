@@ -1,6 +1,7 @@
 {
 	"app.name": "TimeLion",
 	"nav.home": "Home",
+	"nav.myPolls": "Meine Umfragen",
 	"nav.main": "Hauptnavigation",
 	"language.label": "Sprache",
 	"language.de": "Deutsch",
@@ -169,5 +170,22 @@
 	"edit.saved": "Die Änderungen an der Umfrage sind gespeichert.",
 	"results.yourVote": "Deine Antwort:",
 	"results.yourVoteNamed": "Deine Antwort ({name}):",
-	"results.who": "Wer hat wie abgestimmt?"
+	"results.who": "Wer hat wie abgestimmt?",
+	"my.title": "Meine Umfragen",
+	"my.explanation": "Diese Liste gibt es nur in diesem Browser: Sie ist mit keinem Konto verbunden und liegt nicht auf dem Server. Sie enthält die Schlüssel der Umfragen, also kann sie jede Person öffnen, die diesen Browser benutzt. Löschst du die Browserdaten, ist die Liste weg. Bewahre wichtige Links deshalb auch anderswo auf.",
+	"my.empty": "Hier erscheinen die Umfragen, die du in diesem Browser erstellt oder geöffnet hast.",
+	"my.decrypting": "Titel wird entschlüsselt …",
+	"my.untitled": "Umfrage ohne Titel",
+	"my.admin": "Admin",
+	"my.responses": "Deine Antworten: {count}",
+	"my.saved": "Gespeichert am {date}",
+	"my.problem.gone": "Diese Umfrage gibt es nicht mehr: Sie ist abgelaufen oder wurde gelöscht.",
+	"my.problem.unreadable": "Der gespeicherte Schlüssel passt nicht zu dieser Umfrage.",
+	"my.problem.failed": "Die Umfrage konnte gerade nicht geladen werden.",
+	"my.forget": "Entfernen",
+	"my.forgetNamed": "{title} aus diesem Browser entfernen",
+	"my.forgetQuestion": "Aus diesem Browser entfernen? Ohne den Link kommst du nicht mehr an die Umfrage.",
+	"my.forgetAll": "Alle entfernen",
+	"my.forgetAllQuestion": "Alle Umfragen aus diesem Browser entfernen?",
+	"my.forgotten": "Aus diesem Browser entfernt."
 }

@@ -14,6 +14,11 @@ describe('matchRoute', () => {
 		expect(matchRoute('/new/x')).toEqual({ name: 'not-found' });
 	});
 
+	it('matches the list of my polls', () => {
+		expect(matchRoute('/my')).toEqual({ name: 'my' });
+		expect(matchRoute('/my/')).toEqual({ name: 'my' });
+	});
+
 	it('matches polls by their 32-hex ID only', () => {
 		const id = '0123456789abcdef0123456789abcdef';
 		expect(matchRoute(`/p/${id}`)).toEqual({ name: 'poll', id });

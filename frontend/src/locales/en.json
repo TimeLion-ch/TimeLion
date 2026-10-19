@@ -1,6 +1,7 @@
 {
 	"app.name": "TimeLion",
 	"nav.home": "Home",
+	"nav.myPolls": "My polls",
 	"nav.main": "Main navigation",
 	"language.label": "Language",
 	"language.de": "Deutsch",
@@ -169,5 +170,22 @@
 	"edit.saved": "The changes to the poll are saved.",
 	"results.yourVote": "Your answer:",
 	"results.yourVoteNamed": "Your answer ({name}):",
-	"results.who": "Who voted how?"
+	"results.who": "Who voted how?",
+	"my.title": "My polls",
+	"my.explanation": "This list exists only in this browser: it isn't linked to any account and isn't stored on the server. It holds the polls' keys, so anyone who uses this browser can open them. If you clear the browser's data, the list is gone, so keep important links somewhere else as well.",
+	"my.empty": "The polls you created or opened in this browser appear here.",
+	"my.decrypting": "Decrypting the title …",
+	"my.untitled": "Untitled poll",
+	"my.admin": "Admin",
+	"my.responses": "Your responses: {count}",
+	"my.saved": "Saved on {date}",
+	"my.problem.gone": "This poll no longer exists: it has expired or was deleted.",
+	"my.problem.unreadable": "The saved key doesn't match this poll.",
+	"my.problem.failed": "The poll could not be loaded just now.",
+	"my.forget": "Remove",
+	"my.forgetNamed": "Remove {title} from this browser",
+	"my.forgetQuestion": "Remove from this browser? Without the link you can't get back to the poll.",
+	"my.forgetAll": "Remove all",
+	"my.forgetAllQuestion": "Remove all polls from this browser?",
+	"my.forgotten": "Removed from this browser."
 }
