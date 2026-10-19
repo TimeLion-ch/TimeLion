@@ -80,13 +80,17 @@ function utc(ms: number): string {
 		.replace(/\.\d{3}/, '');
 }
 
-/** TEXT values (RFC 5545, 3.3.11): backslash, semicolon and comma escaped, line breaks as `\n`. */
+/**
+ * TEXT values (RFC 5545, 3.3.11): backslash, semicolon and comma escaped, line breaks as `\n`. Other control characters
+ * can't be in TEXT, so they are dropped: a poll's texts come from whoever has the link.
+ */
 export function escapeText(text: string): string {
 	return text
 		.replace(/\\/g, '\\\\')
 		.replace(/;/g, '\\;')
 		.replace(/,/g, '\\,')
-		.replace(/\r\n?|\n/g, '\\n');
+		.replace(/\r\n?|\n/g, '\\n')
+		.replace(/[\u0000-\u0008\u000a-\u001f\u007f]/g, '');
 }
 
 /** Lines longer than 75 octets continue on the next line after a space (3.1); UTF-8 characters stay whole. */

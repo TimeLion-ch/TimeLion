@@ -212,12 +212,17 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [ ] **4.2 Legal pages** 🧭 operator name, address, contact e-mail, hosting provider
   - Routes `/privacy` and `/imprint`, linked in the footer as in the old site ("Impressum", "Kontakt").
   - The privacy policy lists what is stored (ciphertext plus the metadata from CLAUDE.md) and the host's access logs and their retention. The wording should fit the Swiss nFADP and be available in German and English.
+  - From 4.4: it also says that the browser keeps the links, with the key and any admin token, in its history (which browsers may sync) and that "My polls" keeps them in this browser's storage.
 - [x] **4.3 security.txt** — done 2026-10-19 (D8: GitHub private vulnerability reporting)
   - Add `public/.well-known/security.txt` (RFC 9116). The deploy currently excludes `public/.well-known/` from the upload (`.github/scripts/deploy-ftp.sh`). Decide whether this file is deployed from the repository, and adjust the exclude if so.
   - Next: the file is deployed from the repository (the only file of `public/.well-known/` that is); the smoke test fetches it. Its `Expires` is renewed by hand, and `tests/SecurityTxtTest.php` fails 30 days before it passes. `SECURITY.md` is its policy. Private vulnerability reporting must be on in the GitHub repository settings (Security → Private vulnerability reporting).
-- [ ] **4.4 Security review**
+- [x] **4.4 Security review** — done 2026-10-19
   - Checklist: XSS (no `{@html}`, user URLs rendered as text), token handling, CSP still hash-only, headers on every response type, size and rate limits, error messages, and dependency audits (`composer audit`, `npm audit --omit=dev` in CI).
   - Done when: findings are fixed or added as tasks.
+  - Fixed: `npm audit --omit=dev` checked nothing, because `svelte`, whose runtime is bundled, was a dev dependency; it is in `dependencies` now and CI audits it. Poll texts could put control characters into the `.ics` file; `escapeText` drops them. The dev router sent only three of the page headers, so local runs and the end-to-end tests saw fewer than Apache sends; it now sends all of them from `public/.htaccess`. `shivammathur/setup-php`, the only third-party action and one that runs in the deploy job, is pinned to a commit. Two regexes got the `D` modifier for consistency (neither was exploitable).
+  - New regression tests: the CSP template stays hash-only (Vitest), every kind of API response carries the API headers (PHPUnit), and the page carries its headers (Playwright).
+  - Checked without findings: there are no HTML sinks, and poll texts (URLs included) render as text; the only dynamic link comes from validated device-store IDs and keys. Tokens travel only in the `Authorization` header, are stored as hashes and compared with `hash_equals`. The API sends no CORS headers and uses no cookies. Every write is rate-limited and size-checked before parsing. Error messages carry no request data.
+  - Added as tasks: the browser history note in 4.2. IPv6 rate limits were already in the Inbox.
 - [ ] **4.5 License** 🧭 keep GPL-3.0 or switch to AGPL-3.0
   - AGPL also requires anyone running a modified public instance to publish their changes, which fits a hosted privacy tool. Update LICENSE, `composer.json`, `frontend/package.json` and the README to match.
 - [ ] **4.6 Logo license**

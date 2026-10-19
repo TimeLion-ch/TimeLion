@@ -29,7 +29,7 @@ The hosting target is an ordinary shared webspace: PHP, MySQL, Apache with `.hta
 6. **Tokens:** store only SHA-256 hashes and compare them with `hash_equals`. Tokens travel in the `Authorization: Bearer` header, never in URLs.
 7. **Decrypted data is untrusted.** Anyone with the link can write anything. Validate its shape after decrypting, render it as text, and never use `{@html}` with user data.
 8. **Every poll expires.** Expired data is deleted, not hidden.
-9. **Keep dependencies minimal.** Ask before adding a runtime dependency (a PHP `require` or anything bundled into the frontend). Dev tools are fine when justified.
+9. **Keep dependencies minimal.** Ask before adding a runtime dependency (a PHP `require` or anything bundled into the frontend, which goes into `dependencies` in `frontend/package.json`). Dev tools are fine when justified. CI audits the runtime dependencies (`composer audit --no-dev`, `npm audit --omit=dev`).
 10. **Keep UI copy honest.** Never claim features or guarantees that don't exist.
 
 ## Architecture
@@ -238,6 +238,8 @@ One-time server setup:
 5. Set `display_errors` to off in the host's PHP settings (hosting panel or `.user.ini`). `public/api/index.php` switches it off as well, but PHP prints warnings from before that line, e.g. for a POST larger than `post_max_size`, into the response, as HTML with server paths.
 
 **Pushing to `main` deploys to production.** Work on branches and merge through pull requests.
+
+Third-party actions in `ci.yml` (only `shivammathur/setup-php` so far) are pinned to a commit, with the release as a comment, so a moved tag can't change what runs next to the deploy secrets. Update them deliberately.
 
 ## Rules for agents
 

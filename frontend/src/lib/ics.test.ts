@@ -79,6 +79,10 @@ describe('escapeText', () => {
 	it('escapes the special characters of TEXT values', () => {
 		expect(escapeText('a\\b;c,d\r\ne\nf\rg')).toBe('a\\\\b\\;c\\,d\\ne\\nf\\ng');
 	});
+
+	it('drops control characters other than tabs, which TEXT values cannot hold', () => {
+		expect(escapeText('a\u0000b\u0007c\u000bd\u001be\u007ff\tg')).toBe('abcdef\tg');
+	});
 });
 
 describe('fold', () => {
