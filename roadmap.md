@@ -119,9 +119,10 @@ Tasks:
 
 Tasks 2.1–2.3 don't depend on Phase 1 and can run in parallel with it.
 
-- [ ] **2.1 Crypto module** (`src/lib/base64url.ts`, `src/lib/crypto.ts`)
+- [x] **2.1 Crypto module** (`src/lib/base64url.ts`, `src/lib/crypto.ts`) — done 2026-10-19
   - `generatePollKey()`, `exportKey(key)` (base64url), `importKey(string)`, `encryptJson(key, kind, value)` (returns the envelope string) and `decryptJson(key, kind, envelope)` (returns `unknown`), following CLAUDE.md → Encryption design exactly. Implement base64url in plain TypeScript, without `Buffer`.
   - Done when: Vitest covers the round trip, wrong key fails, tampered ciphertext fails, wrong `kind` fails, the envelope matches the backend regex, and IVs differ between calls.
+  - Next: every decryption failure (malformed envelope, wrong key or kind, tampering, plaintext that isn't UTF-8 JSON) throws `DecryptionError`. `importKey` rejects with `TypeError` unless the key is 43 canonical base64url characters (`KEY_PATTERN`), and imported keys are not extractable.
 - [ ] **2.2 Plaintext model and validation** (`src/lib/model.ts`)
   - Types plus hand-written validators (no schema library):
     - `Poll`: `{ v: 1, title (1–200 chars), description? (≤ 2000), location? (≤ 200), timezone (IANA name), options: [{ id (8 hex), start: 'YYYY-MM-DD' | ISO date-time, end? }] (1–100), allowMaybe: boolean, finalOptionId? }`
