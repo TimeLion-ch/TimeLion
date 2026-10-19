@@ -29,13 +29,21 @@ final class ConfigTest extends TestCase
 		self::assertNull(Config::fromArray(['trusted_proxy_header' => null] + self::valid())->trustedProxyHeader);
 	}
 
+	public function testPrivacyPolicy(): void
+	{
+		self::assertNull(Config::fromArray(self::valid())->privacyPolicy);
+		self::assertSame("## Über uns\n\nText", Config::fromArray(['privacy_policy' => "## Über uns\n\nText"] + self::valid())->privacyPolicy);
+	}
+
 	public function testExampleConfigIsValidOnceSecretIsSet(): void
 	{
 		$values = require dirname(__DIR__) . '/config.example.php';
 		self::assertIsArray($values);
 		$values['secret'] = str_repeat('a', 64);
 
-		self::assertSame('prod', Config::fromArray($values)->env);
+		$config = Config::fromArray($values);
+		self::assertSame('prod', $config->env);
+		self::assertStringContainsString('## Verantwortlich', (string) $config->privacyPolicy);
 	}
 
 	/**
@@ -52,6 +60,9 @@ final class ConfigTest extends TestCase
 		yield 'empty proxy header' => [['trusted_proxy_header' => ''] + self::valid(), '"trusted_proxy_header"'];
 		yield 'proxy header with colon' => [['trusted_proxy_header' => 'X-Real-IP: 1.2.3.4'] + self::valid(), '"trusted_proxy_header"'];
 		yield 'proxy header not a string' => [['trusted_proxy_header' => true] + self::valid(), '"trusted_proxy_header"'];
+		yield 'privacy policy not a string' => [['privacy_policy' => ['text']] + self::valid(), '"privacy_policy"'];
+		yield 'empty privacy policy' => [['privacy_policy' => " \n "] + self::valid(), '"privacy_policy"'];
+		yield 'privacy policy not UTF-8' => [['privacy_policy' => "Gr\xF6sse"] + self::valid(), '"privacy_policy"'];
 	}
 
 	/**

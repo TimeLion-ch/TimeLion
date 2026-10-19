@@ -16,4 +16,20 @@ return [
 	],
 	'secret' => 'end-to-end-tests-only-this-secret-is-public',
 	'trusted_proxy_header' => null,
+	'privacy_policy' => <<<'TEXT'
+		## Verantwortlich
+
+		Max Muster
+		Beispielweg 1
+		3000 Bern
+		datenschutz@example.ch
+
+		## Was gespeichert wird
+
+		- die verschlüsselten Daten
+		- eine zufällige Kennung,
+		  ohne Bezug zu dir
+
+		Beschwerden: https://www.edoeb.admin.ch.
+		TEXT,
 ];

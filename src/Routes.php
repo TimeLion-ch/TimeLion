@@ -13,6 +13,7 @@ use TimeLion\Http\Action\DeleteResponseAction;
 use TimeLion\Http\Action\DeployMigrateAction;
 use TimeLion\Http\Action\GetPollAction;
 use TimeLion\Http\Action\HealthAction;
+use TimeLion\Http\Action\PrivacyPolicyAction;
 use TimeLion\Http\Action\UpdatePollAction;
 use TimeLion\Http\Action\UpdateResponseAction;
 
@@ -29,6 +30,7 @@ final class Routes
 	{
 		$app->get('/health', HealthAction::class);
 		$app->post('/deploy/migrate', DeployMigrateAction::class);
+		$app->get('/privacy-policy', PrivacyPolicyAction::class);
 
 		$app->post('/polls', CreatePollAction::class);
 		$app->get('/polls/{id}', GetPollAction::class);

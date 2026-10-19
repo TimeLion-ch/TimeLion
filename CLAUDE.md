@@ -76,7 +76,7 @@ rate_limits (bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)
 SECURITY.md                 how to report vulnerabilities (GitHub private reporting), scope
 bin/migrate.php             apply migrations; --status lists them
 bin/purge.php               delete expired data (optional cron job; requests also purge, see Maintenance/)
-config.example.php          template for config.php (gitignored, lives only on the server)
+config.example.php          template for config.php (gitignored, lives only on the server), incl. the privacy policy text
 dev/router.php              router for `php -S`; mirrors .htaccess, including the CSP
 docs/api.md                 API reference: update it with every endpoint change
 frontend/
@@ -87,9 +87,9 @@ frontend/
   src/assets/               favicon; fonts/ (Plus Jakarta Sans subset, OFL, how it was made)
   src/components/           UI components: building blocks (Button, TextField, Notice, ConfirmButton, CopyField,
                             Calendar) and the parts of the pages (PollForm, ResultsTable, VotePanel, AdminPanel, …)
-  src/routes/               one component per page: Home, CreatePoll, PollPage, MyPolls, NotFound
+  src/routes/               one component per page: Home, CreatePoll, PollPage, MyPolls, PrivacyPolicy, NotFound
   src/lib/                  logic: api.ts, base64url.ts, crypto.ts, dates.ts, deviceStore.ts, download.ts, errors.ts,
-                            format.ts, i18n.ts + i18n.svelte.ts, ics.ts, links.ts, model.ts, pollDraft.ts, polls.ts,
+                            format.ts, i18n.ts + i18n.svelte.ts, ics.ts, links.ts, markup.ts, model.ts, pollDraft.ts, polls.ts,
                             responseDraft.ts, results.ts, routes.ts + router.svelte.ts, storage.ts
   src/locales/{de,en}.json  translations (de.json is the source of truth for keys)
 migrations/                 NNNN_description.sql
@@ -159,6 +159,7 @@ npm --prefix frontend run build
 - Routes are real paths (History API, `routes.ts` + `router.svelte.ts`), because the fragment is reserved for keys. Internal links use `<a href="/…" use:link>`. Add routes in `routes.ts` with tests and render them in `App.svelte`.
 - **Never use `#` anchors** for jumping within a page: the fragment holds the key. `router.hash` is reactive, and `App.svelte` re-creates the poll page for every ID and fragment. Per-entry UI state that must survive a reload (the share screen after creating a poll) goes into history state (`navigate(path, { state })`, `router.state`).
 - Forms edit a draft (`pollDraft.ts`, `responseDraft.ts`) that the lib turns into a document; validation errors show after the first submit and then follow every change. Irreversible actions go through `ConfirmButton`. Dates are `YYYY-MM-DD` strings with UTC arithmetic (`dates.ts`); option times are wall-clock times in the poll's timezone, formatted with `format.ts`.
+- Texts that belong to the operator, such as the privacy policy, live in `config.php`, not in the repository: the API serves them (`GET /api/privacy-policy`), and `markup.ts` turns their small text format into blocks that components render as text. The privacy policy is German only; the English UI says so.
 - All UI text goes through `t('key')` from `i18n.svelte.ts`. Add each key to every file in `src/locales/`; a test enforces identical keys and placeholders. German copy uses Swiss spelling (ss, never ß) and the informal "du".
 - **CSS:** global tokens live in `src/app.css`; components use scoped `<style>` blocks. **No `style="…"` attributes in markup**, because the hash-based CSP blocks them. Use classes, or `style:` directives where something must be dynamic. SVG colours use presentation attributes (`fill="…"`). The colour tokens meet WCAG AA in both themes (text 4.5:1, focus ring and control borders 3:1); keep it that way. The font is Plus Jakarta Sans, a Latin subset with weights 400–800 that the build inlines as a `data:` URI (`font-src data:` in the CSP); `src/assets/fonts/README.md` says how to rebuild it, and it stays under 40 KiB. The layout must work at 360 px; text from polls gets `overflow-wrap: anywhere`. Absolutely positioned content (such as `.visually-hidden`) inside a scroll box needs a positioned ancestor, or it widens the page.
 - API calls go only through `src/lib/api.ts`; pass tokens with the `token` option. localStorage goes only through `src/lib/storage.ts`, which never throws. Treat everything stored there as optional.
@@ -234,7 +235,7 @@ One-time server setup:
 
 1. Make `DEPLOY_FTP_PATH` the domain's document root, and a **dedicated** directory: the deploy deletes everything else in it except the host's `.well-known/` and `.user.ini`.
 2. The host doesn't let us point the document root to `public/`, so the root `.htaccess` rewrites every request into `public/`. Nothing outside `public/` may be reachable from the web, and the smoke test checks this. On a host that allows it, point the document root to `DEPLOY_FTP_PATH/public` instead; Apache then ignores the root `.htaccess`.
-3. Create `config.php` locally from `config.example.php` with `prod`, the database credentials and a secret, and upload it to `DEPLOY_FTP_PATH/config.php`.
+3. Create `config.php` locally from `config.example.php` with `prod`, the database credentials, a secret and the privacy policy (fill in every `[placeholder]`), and upload it to `DEPLOY_FTP_PATH/config.php`. A changed privacy policy only needs this file uploaded again, no deploy.
 4. Make sure the server has HTTPS (hosting panel), PHP ≥ 8.3 with pdo_mysql, and Apache with mod_rewrite and mod_headers. PHP must be able to delete files in `var/`, or the migration call fails with `migration_failed`.
 5. Set `display_errors` to off in the host's PHP settings (hosting panel or `.user.ini`). `public/api/index.php` switches it off as well, but PHP prints warnings from before that line, e.g. for a POST larger than `post_max_size`, into the response, as HTML with server paths.
 

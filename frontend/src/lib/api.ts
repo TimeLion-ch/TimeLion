@@ -124,6 +124,9 @@ const responsePath = (pollId: string, responseId: string) => `${pollPath(pollId)
 export const api = {
 	health: () => request<{ status: 'ok' }>('GET', '/health'),
 
+	/** The text from config.php (format: markup.ts); `not_found` if the operator hasn't set one. */
+	privacyPolicy: () => request<{ text: string }>('GET', '/privacy-policy'),
+
 	createPoll: (ciphertext: string, expiresAt: number) =>
 		request<CreatedPoll>('POST', '/polls', { body: { ciphertext, expiresAt } }),
 

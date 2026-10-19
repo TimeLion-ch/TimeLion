@@ -19,6 +19,7 @@ final readonly class Config
 
 	/**
 	 * @param string|null $trustedProxyHeader the header a reverse proxy passes the client IP in (see config.example.php)
+	 * @param string|null $privacyPolicy the privacy policy's text (format: frontend/src/lib/markup.ts), or null for none
 	 */
 	public function __construct(
 		public string $env,
@@ -27,6 +28,7 @@ final readonly class Config
 		public ?string $dbPassword,
 		public string $secret,
 		public ?string $trustedProxyHeader = null,
+		public ?string $privacyPolicy = null,
 	) {
 		if (!in_array($env, [self::ENV_DEV, self::ENV_PROD], true)) {
 			throw new InvalidArgumentException(sprintf('Config "env" must be "%s" or "%s".', self::ENV_DEV, self::ENV_PROD));
@@ -39,6 +41,10 @@ final readonly class Config
 		}
 		if ($trustedProxyHeader !== null && preg_match('/^[A-Za-z0-9-]+$/D', $trustedProxyHeader) !== 1) {
 			throw new InvalidArgumentException('Config "trusted_proxy_header" must be a header name such as "X-Forwarded-For", or null.');
+		}
+		// UTF-8, or the API couldn't encode it as JSON.
+		if ($privacyPolicy !== null && (trim($privacyPolicy) === '' || preg_match('//u', $privacyPolicy) !== 1)) {
+			throw new InvalidArgumentException('Config "privacy_policy" must be UTF-8 text, or null.');
 		}
 	}
 
@@ -83,6 +89,7 @@ final readonly class Config
 			dbPassword: self::nullableString($db, 'password', 'db.password'),
 			secret: self::string($values, 'secret', 'secret'),
 			trustedProxyHeader: self::nullableString($values, 'trusted_proxy_header', 'trusted_proxy_header'),
+			privacyPolicy: self::nullableString($values, 'privacy_policy', 'privacy_policy'),
 		);
 	}
 

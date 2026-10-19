@@ -192,5 +192,10 @@
 	"poll.addToCalendarHint": "Downloads an .ics file for your calendar. It contains the title, description and location, but not the link to the poll.",
 	"vote.personalLink": "Personal link",
 	"vote.personalLinkNamed": "Personal link for the response of {name}",
-	"vote.personalHint": "With it you can change or delete this response on another device too. Don't pass it on."
+	"vote.personalHint": "With it you can change or delete this response on another device too. Don't pass it on.",
+	"footer.privacy": "Privacy",
+	"privacy.title": "Privacy policy",
+	"privacy.loading": "Loading the privacy policy …",
+	"privacy.missing": "No privacy policy has been set up for this installation yet.",
+	"privacy.germanOnly": "This privacy policy is only available in German."
 }

@@ -19,6 +19,11 @@ describe('matchRoute', () => {
 		expect(matchRoute('/my/')).toEqual({ name: 'my' });
 	});
 
+	it('matches the privacy policy', () => {
+		expect(matchRoute('/privacy')).toEqual({ name: 'privacy' });
+		expect(matchRoute('/privacy/')).toEqual({ name: 'privacy' });
+	});
+
 	it('matches polls by their 32-hex ID only', () => {
 		const id = '0123456789abcdef0123456789abcdef';
 		expect(matchRoute(`/p/${id}`)).toEqual({ name: 'poll', id });
