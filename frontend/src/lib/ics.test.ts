@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildIcs, escapeText, fold, icsFilename } from './ics';
-import type { Poll } from './model';
+import type { DatePoll } from './model';
 
-const poll: Poll = {
+const poll: DatePoll = {
 	v: 1,
+	type: 'dates',
 	title: 'Grillabend; Team, Bern',
 	description: 'Bring etwas mit.\nDanke!',
 	location: 'Aare\\Ufer',
@@ -24,7 +25,7 @@ const context = {
 	now: Date.UTC(2026, 9, 19, 8, 5, 9),
 };
 
-function lines(optionIndex: number, source: Poll = poll): string[] {
+function lines(optionIndex: number, source: DatePoll = poll): string[] {
 	return buildIcs(source, source.options[optionIndex]!, context).split('\r\n');
 }
 

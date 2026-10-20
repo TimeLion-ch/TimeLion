@@ -31,7 +31,7 @@
 <div class="scroll" role="region" aria-labelledby="{id}-caption" tabindex="0">
 	<table>
 		<caption id="{id}-caption" class="visually-hidden">
-			{t('results.caption')}
+			{poll.type === 'text' ? t('results.captionText') : t('results.caption')}
 		</caption>
 		<thead>
 			<tr>
@@ -39,7 +39,7 @@
 				{#each poll.options as option (option.id)}
 					{@const formatted = formatOption(option, i18n.locale, 'compact')}
 					<th scope="col" class={{ best: best.has(option.id), final: poll.finalOptionId === option.id }}>
-						<span class="date">{formatted.date}</span>
+						<span class={poll.type === 'text' ? 'text' : 'date'}>{formatted.main}</span>
 						{#if formatted.time !== null}
 							<span class="time">{formatted.time}</span>
 						{/if}
@@ -143,6 +143,14 @@
 	.tag {
 		display: block;
 		white-space: nowrap;
+	}
+
+	/* As wide as the text, up to a limit; longer texts wrap. */
+	.text {
+		display: block;
+		width: max-content;
+		max-width: 14rem;
+		overflow-wrap: anywhere;
 	}
 
 	.time {

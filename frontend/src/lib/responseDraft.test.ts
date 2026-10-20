@@ -4,6 +4,7 @@ import { buildResponse, choices, draftFromResponse, emptyResponse, validateRespo
 
 const poll: Poll = {
 	v: 1,
+	type: 'dates',
 	title: 'Grillabend',
 	timezone: 'Europe/Zurich',
 	options: [

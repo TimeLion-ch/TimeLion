@@ -59,7 +59,7 @@
 			<li>
 				<fieldset>
 					<legend>
-						<span class="date">{formatted.date}</span>
+						<span>{formatted.main}</span>
 						{#if formatted.time !== null}<span class="time">{formatted.time}</span>{/if}
 					</legend>
 					<div class="choices">
@@ -133,6 +133,7 @@
 		margin-bottom: var(--space-2);
 		padding: 0;
 		font-weight: 700;
+		overflow-wrap: anywhere;
 	}
 
 	.time {

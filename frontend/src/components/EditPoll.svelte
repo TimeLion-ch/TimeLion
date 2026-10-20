@@ -4,7 +4,7 @@
 	import { errorMessage } from '../lib/errors';
 	import { optionLabel } from '../lib/format';
 	import { i18n, t, type MessageKey } from '../lib/i18n.svelte';
-	import type { Poll, PollOption } from '../lib/model';
+	import type { DatePoll, Poll, PollOption } from '../lib/model';
 	import { draftFromPoll, editedPoll, expiresAt, removedOptions, type PollDraft } from '../lib/pollDraft';
 	import { updatePoll, type LoadedPoll } from '../lib/polls';
 	import Button from './Button.svelte';
@@ -16,15 +16,17 @@
 		id: string;
 		pollKey: string;
 		adminToken: string;
+		/** `loaded.poll`; only date polls can be edited so far. */
+		poll: DatePoll;
 		loaded: LoadedPoll;
 		/** `saved` is true if the poll was changed. */
 		ondone: (saved: boolean) => void;
 	};
 
-	let { id, pollKey, adminToken, loaded, ondone }: Props = $props();
+	let { id, pollKey, adminToken, poll: current, loaded, ondone }: Props = $props();
 
 	// svelte-ignore state_referenced_locally
-	const original = draftFromPoll(loaded.poll, loaded.meta.expiresAt);
+	const original = draftFromPoll(current, loaded.meta.expiresAt);
 	let draft = $state<PollDraft>(structuredClone(original));
 	// svelte-ignore state_referenced_locally
 	const today = todayIn(loaded.poll.timezone);
@@ -106,6 +108,7 @@
 
 	ul {
 		margin: 0 0 var(--space-3);
+		overflow-wrap: anywhere;
 	}
 
 	.actions {

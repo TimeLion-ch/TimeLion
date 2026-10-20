@@ -31,8 +31,9 @@ If a task grows beyond roughly 400 changed lines (not counting tests and lock fi
 | D8  | Security contact: GitHub private vulnerability reporting, in `security.txt` and `SECURITY.md`; no e-mail address is published         | 2026-10-19 |
 | D9  | License: AGPL-3.0-only instead of GPL-3.0-only, so that whoever runs a modified public instance must publish their changes           | 2026-10-19 |
 | D10 | Legal texts live in `config.php` (server only) and are served by the API, so the operator's details stay out of the repository; the privacy policy is German only | 2026-10-19 |
+| D11 | In text polls, yes **and** maybe count as a choice for the minimum and maximum; no and unanswered don't                            | 2026-10-20 |
 
-Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), what counts as a choice in text polls (6.1), notifications (7.6).
+Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), notifications (7.6).
 
 ## Phase 0: Foundation ✅
 
@@ -254,7 +255,7 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 
 Polls whose options are free texts ("Pizza", "Sushi", …) instead of dates, with an optional minimum and maximum of options each participant chooses. The creator picks dates or text options when creating the poll. The type, the texts and the limits live inside the encrypted poll document, so the API doesn't change and the server stores nothing new (CLAUDE.md, rule 1). Polls created so far stay date polls. The phase doesn't depend on Phase 5, and the Phase 3 rules for UI tasks apply (both locale files, no CSP violations, 360 px, both themes, keyboard).
 
-- [ ] **6.1 Model: text options and choice limits** 🧭 does "maybe" count as a choice?
+- [x] **6.1 Model: text options and choice limits** — done 2026-10-20 (D11: yes and maybe count)
   - `Poll` gets `type: 'dates' | 'text'`. `parsePoll` reads an absent `type` as `'dates'`, so every existing poll stays valid and the document stays `v: 1`. (Not `kind`: that word already names the AAD's `poll` and `response`.)
   - A text poll's options are `{ id (8 hex), text (1–100, not blank) }`. A poll never mixes option forms; a document whose options don't match its type is invalid. 100 options of 100 characters (3 UTF-8 bytes each, then base64url) stay below the 64 KiB poll ciphertext limit; a test encrypts such a poll and checks it against `serverLimits.pollCiphertextBytes`.
   - Text polls may have `minChoices` and `maxChoices`, each optional: whole numbers with 1 ≤ min ≤ max ≤ the number of options. `parsePoll` drops a limit that doesn't fit (like an unknown `finalOptionId`), so a limit never makes a poll unreadable. Date polls have no limits.
@@ -262,6 +263,7 @@ Polls whose options are free texts ("Pizza", "Sushi", …) instead of dates, wit
   - Add `choiceProblem(poll, votes)`, returning `'tooFew' | 'tooMany' | null`. `submitResponse` and `editResponse` (polls.ts) refuse a response that breaks the limits (`TypeError`, like other invalid documents), but `parseResponse` doesn't check them, so a response from before the admin changed the limits stays readable. The server never sees votes, so a modified browser can ignore the limits; the UI must not claim otherwise (rule 10).
   - Narrow on `type` wherever code assumes date options (`format.ts`, `hasTimes` in `results.ts`, `ics.ts`, `pollDraft.ts`, the results and voting components). `format.ts` shows a text option as its text, so once this task is done a text poll displays and takes votes. "Add to calendar" is offered for date polls only.
   - Done when: Vitest covers parsing (old documents without `type`, mismatched options, limits that don't fit, hostile values), `choiceProblem`, and the size test.
+  - Next: `Poll` is `DatePoll | TextPoll` (options `DateOption` or `TextOption`), narrowed on `type`, which `parsePoll` always sets. An option text may not contain control characters or lone surrogates (they cost 6 bytes as JSON), so the largest text poll stays at 63,239 of 65,536 bytes; the draft must remove them (6.2). `formatOption` returns `{ main, time }`; `choiceCount` and `choiceProblem` are in model.ts. Until 6.4 only date polls can be edited: the admin panel hides "Edit poll" for text polls, and `EditPoll` takes the narrowed `poll`.
 - [ ] **6.2 Create form: dates or text options**. Depends on 6.1.
   - At the top of the options part of `PollForm`, a choice between "Dates" and "Text options" (a radio group). Switching keeps what was entered for the other type until the poll is created; only the chosen type is saved.
   - Text options: a list editor (e.g. `components/TextOptionList.svelte`) to add, edit, remove and reorder options (move up and down buttons, no drag and drop). The options keep the order they were entered in.

@@ -6,7 +6,7 @@
 import { serverLimits } from './api';
 import { addDays, todayIn, zonedToUtc } from './dates';
 import type { MessageKey } from './i18n.svelte';
-import { limits, type Poll, type PollOption } from './model';
+import { limits, type DateOption, type DatePoll, type Poll, type PollOption } from './model';
 
 /** A time range on one day; the end is optional, and an end before the start is on the next day. */
 export type DraftSlot = {
@@ -161,7 +161,7 @@ function slotErrors(days: DraftDay[]): Record<string, MessageKey> {
 }
 
 /** An option before it gets its ID: an existing one when editing, otherwise a new one. */
-type DraftOption = Omit<PollOption, 'id'> & { id?: string | undefined };
+type DraftOption = Omit<DateOption, 'id'> & { id?: string | undefined };
 
 /** The options of a day in time order: the whole day, or one per slot. */
 function dayOptions(day: DraftDay): DraftOption[] {
@@ -183,7 +183,7 @@ function dayOptions(day: DraftDay): DraftOption[] {
  * The poll document. Texts are trimmed; empty optional texts are left out. Options keep the ID they had when the
  * draft was made from a poll; new options get a random one.
  */
-export function buildPoll(draft: PollDraft, randomId: () => string = newOptionId): Poll {
+export function buildPoll(draft: PollDraft, randomId: () => string = newOptionId): DatePoll {
 	const drafted = draft.days.flatMap(dayOptions);
 	const ids = new Set<string>();
 	for (const { id } of drafted) {
@@ -199,10 +199,11 @@ export function buildPoll(draft: PollDraft, randomId: () => string = newOptionId
 		ids.add(id);
 		return id;
 	};
-	const options: PollOption[] = drafted.map(({ id, ...option }) => ({ id: id ?? uniqueId(), ...option }));
+	const options: DateOption[] = drafted.map(({ id, ...option }) => ({ id: id ?? uniqueId(), ...option }));
 
-	const poll: Poll = {
+	const poll: DatePoll = {
 		v: 1,
+		type: 'dates',
 		title: draft.title.trim(),
 		timezone: draft.timezone,
 		options,
@@ -220,7 +221,7 @@ export function buildPoll(draft: PollDraft, randomId: () => string = newOptionId
 }
 
 /** The draft for editing a poll. Options keep their IDs; `expiresAt` (Unix seconds) becomes the expiry date. */
-export function draftFromPoll(poll: Poll, expiresAt: number): PollDraft {
+export function draftFromPoll(poll: DatePoll, expiresAt: number): PollDraft {
 	const days = new Map<string, DraftDay>();
 	for (const option of poll.options) {
 		const [date = '', time] = option.start.split('T');
@@ -249,7 +250,7 @@ export function expiryDateOf(expiresAt: number, timezone: string): string {
 }
 
 /** The edited poll document; the final option stays chosen if it still exists. */
-export function editedPoll(previous: Poll, draft: PollDraft, randomId: () => string = newOptionId): Poll {
+export function editedPoll(previous: Poll, draft: PollDraft, randomId: () => string = newOptionId): DatePoll {
 	const poll = buildPoll(draft, randomId);
 	if (previous.finalOptionId !== undefined && poll.options.some((option) => option.id === previous.finalOptionId)) {
 		poll.finalOptionId = previous.finalOptionId;

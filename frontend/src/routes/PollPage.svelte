@@ -66,10 +66,14 @@
 	}
 
 	function addToCalendar() {
-		if (poll === undefined || finalOption === undefined) {
+		if (poll?.type !== 'dates') {
 			return;
 		}
-		const ics = buildIcs(poll, finalOption, { pollId: id, host: location.hostname, now: Date.now() });
+		const option = poll.options.find((candidate) => candidate.id === poll.finalOptionId);
+		if (option === undefined) {
+			return;
+		}
+		const ics = buildIcs(poll, option, { pollId: id, host: location.hostname, now: Date.now() });
 		downloadText(icsFilename(poll.title), ics, 'text/calendar;charset=utf-8');
 	}
 
@@ -121,8 +125,8 @@
 	</section>
 {:else if loaded === null || poll === undefined}
 	<p class="loading" role="status">{t('poll.loading')}</p>
-{:else if editing && fragment?.adminToken !== undefined}
-	<EditPoll {id} pollKey={fragment.key} adminToken={fragment.adminToken} {loaded} ondone={finishEdit} />
+{:else if editing && fragment?.adminToken !== undefined && poll.type === 'dates'}
+	<EditPoll {id} pollKey={fragment.key} adminToken={fragment.adminToken} {poll} {loaded} ondone={finishEdit} />
 {:else}
 	<article class="poll">
 		<header>
@@ -156,9 +160,9 @@
 			<Notice kind="success" role="status"><p>{t('edit.saved')}</p></Notice>
 		{/if}
 		{#if finalOption !== undefined}
-			<Notice kind="success" title={t('poll.finalTitle')}>
-				<p>{optionLabel(finalOption, i18n.locale, 'long')}</p>
-				{#if loaded.meta.closedAt !== null}
+			<Notice kind="success" title={poll.type === 'text' ? t('poll.finalTitleText') : t('poll.finalTitle')}>
+				<p class="final">{optionLabel(finalOption, i18n.locale, 'long')}</p>
+				{#if loaded.meta.closedAt !== null && poll.type === 'dates'}
 					<div class="calendar">
 						<Button variant="primary" onclick={addToCalendar}>{t('poll.addToCalendar')}</Button>
 						<p class="hint">{t('poll.addToCalendarHint')}</p>
@@ -263,6 +267,10 @@
 
 	.description {
 		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.final {
 		overflow-wrap: anywhere;
 	}
 

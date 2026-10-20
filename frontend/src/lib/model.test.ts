@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { parsePoll, parseResponse, type Poll } from './model';
+import { choiceCount, choiceProblem, parsePoll, parseResponse, type Poll, type TextPoll } from './model';
 
+/** A date poll as stored before text polls existed: without a type. */
 const validPoll = {
 	v: 1,
 	title: 'Grillabend',
@@ -34,8 +35,12 @@ function deeplyNested(): unknown {
 }
 
 describe('parsePoll', () => {
-	it('returns a valid poll unchanged', () => {
-		expect(parsePoll(validPoll)).toEqual(validPoll);
+	it('reads a poll without a type as a date poll', () => {
+		expect(parsePoll(validPoll)).toEqual({ ...validPoll, type: 'dates' });
+	});
+
+	it('returns a valid date poll unchanged', () => {
+		expect(parsePoll(withPoll({ type: 'dates' }))).toEqual({ ...validPoll, type: 'dates' });
 	});
 
 	it('accepts a minimal poll without the optional fields', () => {
@@ -47,7 +52,7 @@ describe('parsePoll', () => {
 			allowMaybe: false,
 		};
 
-		expect(parsePoll(minimal)).toEqual(minimal);
+		expect(parsePoll(minimal)).toEqual({ ...minimal, type: 'dates' });
 	});
 
 	it('accepts the documented limits', () => {
@@ -92,6 +97,11 @@ describe('parsePoll', () => {
 		['an array', [validPoll]],
 		['another version', withPoll({ v: 2 })],
 		['a string version', withPoll({ v: '1' })],
+		['an unknown type', withPoll({ type: 'other' })],
+		['a null type', withPoll({ type: null })],
+		['an uppercase type', withPoll({ type: 'TEXT' })],
+		['a type array', withPoll({ type: ['dates'] })],
+		['date options in a text poll', withPoll({ type: 'text' })],
 		['a missing title', withPoll({ title: undefined })],
 		['an empty title', withPoll({ title: '' })],
 		['a blank title', withPoll({ title: ' \n\t ' })],
@@ -121,7 +131,13 @@ describe('parsePoll', () => {
 	});
 
 	it('ignores deeply nested values in unknown fields', () => {
-		expect(parsePoll(withPoll({ extra: deeplyNested() }))).toEqual(validPoll);
+		expect(parsePoll(withPoll({ extra: deeplyNested() }))).toEqual({ ...validPoll, type: 'dates' });
+	});
+
+	it('drops choice limits from date polls', () => {
+		const parsed = parsePoll(withPoll({ minChoices: 1, maxChoices: 2 }));
+		expect(parsed).not.toHaveProperty('minChoices');
+		expect(parsed).not.toHaveProperty('maxChoices');
 	});
 
 	it('ignores inherited fields', () => {
@@ -168,6 +184,157 @@ describe('parsePoll', () => {
 	});
 });
 
+const textPoll = {
+	v: 1,
+	type: 'text',
+	title: 'Mittagessen',
+	timezone: 'Europe/Zurich',
+	options: [
+		{ id: '0a1b2c3d', text: 'Pizza' },
+		{ id: '1a2b3c4d', text: 'Sushi' },
+		{ id: '2a3b4c5d', text: 'Älplermagronen' },
+	],
+	allowMaybe: true,
+	minChoices: 1,
+	maxChoices: 2,
+	finalOptionId: '1a2b3c4d',
+};
+
+const withText = (changes: Record<string, unknown>) => ({ ...textPoll, ...changes });
+const withTextOption = (option: unknown) =>
+	withText({ options: [option], minChoices: undefined, maxChoices: undefined });
+
+describe('parsePoll for text polls', () => {
+	it('returns a valid text poll unchanged', () => {
+		expect(parsePoll(textPoll)).toEqual(textPoll);
+	});
+
+	it('accepts texts up to the limit, with any printable characters', () => {
+		const options = Array.from({ length: 100 }, (_, i) => ({
+			id: i.toString(16).padStart(8, '0'),
+			text: i === 0 ? '"Quotes", \\backslashes\\ & <tags> 🦁' : '€'.repeat(100),
+		}));
+
+		expect(parsePoll(withText({ options }))?.options).toEqual(options);
+	});
+
+	it('accepts a poll without choice limits, or with only one', () => {
+		const { minChoices: _min, maxChoices: _max, ...unlimited } = textPoll;
+
+		expect(parsePoll(unlimited)).toEqual(unlimited);
+		expect(parsePoll({ ...unlimited, maxChoices: 3 })).toEqual({ ...unlimited, maxChoices: 3 });
+		expect(parsePoll({ ...unlimited, minChoices: 3 })).toEqual({ ...unlimited, minChoices: 3 });
+		expect(parsePoll(withText({ minChoices: 2, maxChoices: 2 }))).toMatchObject({ minChoices: 2, maxChoices: 2 });
+	});
+
+	it.each([
+		['zero', 0],
+		['a negative number', -1],
+		['more than the options', 4],
+		['a fraction', 1.5],
+		['a string', '1'],
+		['null', null],
+		['NaN', Number.NaN],
+		['Infinity', Number.POSITIVE_INFINITY],
+		['a boolean', true],
+		['an object', { valueOf: () => 1 }],
+	])('drops a limit that is %s and keeps the other', (_, limit) => {
+		const withoutMin = parsePoll(withText({ minChoices: limit }));
+		const withoutMax = parsePoll(withText({ maxChoices: limit }));
+
+		expect(withoutMin).not.toHaveProperty('minChoices');
+		expect(withoutMin).toMatchObject({ maxChoices: 2 });
+		expect(withoutMax).not.toHaveProperty('maxChoices');
+		expect(withoutMax).toMatchObject({ minChoices: 1 });
+	});
+
+	it('drops both limits if the minimum is above the maximum', () => {
+		const parsed = parsePoll(withText({ minChoices: 3, maxChoices: 2 }));
+
+		expect(parsed).not.toHaveProperty('minChoices');
+		expect(parsed).not.toHaveProperty('maxChoices');
+		expect(parsed?.options).toHaveLength(3);
+	});
+
+	it('drops unknown fields of text options, including __proto__', () => {
+		const hostile = JSON.parse(
+			'{"v":1,"type":"text","title":"T","timezone":"UTC","allowMaybe":false,' +
+				'"options":[{"__proto__":{"polluted":true},"id":"0a1b2c3d","text":"Pizza","start":"2026-11-03"}]}',
+		) as unknown;
+
+		const parsed = parsePoll(hostile);
+
+		expect(parsed?.options).toEqual([{ id: '0a1b2c3d', text: 'Pizza' }]);
+		expect(Object.getPrototypeOf(parsed?.options[0])).toBe(Object.prototype);
+		expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+	});
+
+	it.each([
+		['text options in a date poll', withText({ type: undefined })],
+		['text options in a poll of type dates', withText({ type: 'dates' })],
+		['mixed options', withText({ options: [...textPoll.options, { id: 'ffffffff', start: '2026-11-03' }] })],
+		['no options', withText({ options: [] })],
+		['too many options', withText({ options: Array.from({ length: 101 }, () => textPoll.options[0]) })],
+		['duplicate option IDs', withText({ options: [textPoll.options[0], textPoll.options[0]] })],
+		['a deeply nested option', withText({ options: deeplyNested() })],
+	])('rejects %s', (_, value) => {
+		expect(parsePoll(value)).toBeNull();
+	});
+
+	it.each([
+		['a missing text', { id: '0a1b2c3d' }],
+		['an empty text', { id: '0a1b2c3d', text: '' }],
+		['a blank text', { id: '0a1b2c3d', text: ' \u3000 ' }],
+		['a text that is too long', { id: '0a1b2c3d', text: 'x'.repeat(101) }],
+		['a huge text', { id: '0a1b2c3d', text: 'x'.repeat(10_000_000) }],
+		['a numeric text', { id: '0a1b2c3d', text: 42 }],
+		['a text array', { id: '0a1b2c3d', text: ['Pizza'] }],
+		['a deeply nested text', { id: '0a1b2c3d', text: deeplyNested() }],
+		['a line break', { id: '0a1b2c3d', text: 'Pizza\nSushi' }],
+		['a tab', { id: '0a1b2c3d', text: 'Pizza\tSushi' }],
+		['a null character', { id: '0a1b2c3d', text: 'Pizza\u0000' }],
+		['a C1 control character', { id: '0a1b2c3d', text: 'Pizza\u0085' }],
+		['a lone surrogate', { id: '0a1b2c3d', text: 'Pizza\ud83e' }],
+		['an invalid ID', { id: 'Pizza', text: 'Pizza' }],
+		['an option that is not an object', 'Pizza'],
+	])('rejects %s', (_, option) => {
+		expect(parsePoll(withTextOption(option))).toBeNull();
+	});
+});
+
+describe('choiceProblem', () => {
+	const poll = parsePoll(textPoll) as TextPoll;
+
+	it('counts yes and maybe as choices, but not no or votes for other options', () => {
+		const votes = { '0a1b2c3d': 'yes', '1a2b3c4d': 'maybe', '2a3b4c5d': 'no', ffffffff: 'yes' } as const;
+
+		expect(choiceCount(poll, votes)).toBe(2);
+		expect(choiceCount(poll, Object.create({ '0a1b2c3d': 'yes' }) as Record<string, never>)).toBe(0);
+	});
+
+	it('reports too few and too many choices', () => {
+		expect(choiceProblem(poll, {})).toBe('tooFew');
+		expect(choiceProblem(poll, { '0a1b2c3d': 'no', '1a2b3c4d': 'no' })).toBe('tooFew');
+		expect(choiceProblem(poll, { '0a1b2c3d': 'maybe' })).toBeNull();
+		expect(choiceProblem(poll, { '0a1b2c3d': 'yes', '1a2b3c4d': 'maybe' })).toBeNull();
+		expect(choiceProblem(poll, { '0a1b2c3d': 'yes', '1a2b3c4d': 'yes', '2a3b4c5d': 'maybe' })).toBe('tooMany');
+	});
+
+	it('checks only the limits the poll has', () => {
+		const all = { '0a1b2c3d': 'yes', '1a2b3c4d': 'yes', '2a3b4c5d': 'yes' } as const;
+		const { minChoices: _, ...onlyMax } = poll;
+		const { maxChoices: __, ...onlyMin } = poll;
+
+		expect(choiceProblem(onlyMax, {})).toBeNull();
+		expect(choiceProblem(onlyMax, all)).toBe('tooMany');
+		expect(choiceProblem(onlyMin, all)).toBeNull();
+	});
+
+	it('never finds a problem in a date poll', () => {
+		expect(choiceProblem(parsePoll(validPoll) as Poll, {})).toBeNull();
+	});
+});
+
 describe('parseResponse', () => {
 	it('returns a valid response unchanged', () => {
 		expect(parseResponse(validResponse, poll)).toEqual(validResponse);
@@ -180,6 +347,12 @@ describe('parseResponse', () => {
 			votes: {},
 		});
 		expect(parseResponse(withResponse({ comment: 'x'.repeat(500) }), poll)).not.toBeNull();
+	});
+
+	it('reads votes for text options, without checking the choice limits', () => {
+		const votes = { '0a1b2c3d': 'yes', '1a2b3c4d': 'yes', '2a3b4c5d': 'maybe' };
+
+		expect(parseResponse(withResponse({ votes }), parsePoll(textPoll) as Poll)?.votes).toEqual(votes);
 	});
 
 	it('ignores votes for unknown options and votes with unknown values', () => {

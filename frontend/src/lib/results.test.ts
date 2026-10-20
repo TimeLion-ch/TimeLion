@@ -4,6 +4,7 @@ import { bestOptions, hasTimes, score, tally } from './results';
 
 const poll: Poll = {
 	v: 1,
+	type: 'dates',
 	title: 'Grillabend',
 	timezone: 'Europe/Zurich',
 	options: [
@@ -55,6 +56,10 @@ describe('bestOptions', () => {
 });
 
 describe('hasTimes', () => {
+	it('is false for text polls', () => {
+		expect(hasTimes({ ...poll, type: 'text', options: [{ id: 'aaaaaaaa', text: '18:00' }] })).toBe(false);
+	});
+
 	it('is true if any option has a time', () => {
 		expect(hasTimes(poll)).toBe(false);
 		expect(hasTimes({ ...poll, options: [...poll.options, { id: 'dddddddd', start: '2026-11-06T18:00' }] })).toBe(

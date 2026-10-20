@@ -244,6 +244,7 @@ describe('newOptionId', () => {
 describe('editing a poll', () => {
 	const poll: Poll = {
 		v: 1,
+		type: 'dates',
 		title: 'Grillabend',
 		description: 'Mit Salat',
 		timezone: 'Europe/Zurich',
