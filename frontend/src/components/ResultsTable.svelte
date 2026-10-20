@@ -150,6 +150,7 @@
 		display: block;
 		width: max-content;
 		max-width: 14rem;
+		margin-inline: auto;
 		overflow-wrap: anywhere;
 	}
 

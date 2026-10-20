@@ -93,6 +93,7 @@
 			submitLabel={t('vote.saveChanges')}
 			{busy}
 			autoExpiry={false}
+			chooseType={false}
 			error={error && t(error)}
 			onsubmit={submit}
 			oncancel={() => ondone(false)}
