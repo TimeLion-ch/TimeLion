@@ -125,8 +125,8 @@
 	</section>
 {:else if loaded === null || poll === undefined}
 	<p class="loading" role="status">{t('poll.loading')}</p>
-{:else if editing && fragment?.adminToken !== undefined && poll.type === 'dates'}
-	<EditPoll {id} pollKey={fragment.key} adminToken={fragment.adminToken} {poll} {loaded} ondone={finishEdit} />
+{:else if editing && fragment?.adminToken !== undefined}
+	<EditPoll {id} pollKey={fragment.key} adminToken={fragment.adminToken} {loaded} ondone={finishEdit} />
 {:else}
 	<article class="poll">
 		<header>

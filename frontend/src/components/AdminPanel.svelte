@@ -117,15 +117,13 @@
 			</div>
 		</div>
 
-		{#if loaded.poll.type === 'dates'}
-			<div class="group">
-				<h3>{t('admin.edit')}</h3>
-				<p class="muted">{t('admin.editHint')}</p>
-				<div>
-					<Button onclick={onedit}>{t('admin.edit')}</Button>
-				</div>
+		<div class="group">
+			<h3>{t('admin.edit')}</h3>
+			<p class="muted">{loaded.poll.type === 'text' ? t('admin.editHintText') : t('admin.editHint')}</p>
+			<div>
+				<Button onclick={onedit}>{t('admin.edit')}</Button>
 			</div>
-		{/if}
+		</div>
 
 		<div class="group">
 			<h3>

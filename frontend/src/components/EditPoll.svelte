@@ -4,7 +4,7 @@
 	import { errorMessage } from '../lib/errors';
 	import { optionLabel } from '../lib/format';
 	import { i18n, t, type MessageKey } from '../lib/i18n.svelte';
-	import type { DatePoll, Poll, PollOption } from '../lib/model';
+	import type { Poll, PollOption } from '../lib/model';
 	import { draftFromPoll, editedPoll, expiresAt, removedOptions, type PollDraft } from '../lib/pollDraft';
 	import { updatePoll, type LoadedPoll } from '../lib/polls';
 	import Button from './Button.svelte';
@@ -16,17 +16,15 @@
 		id: string;
 		pollKey: string;
 		adminToken: string;
-		/** `loaded.poll`; only date polls can be edited so far. */
-		poll: DatePoll;
 		loaded: LoadedPoll;
 		/** `saved` is true if the poll was changed. */
 		ondone: (saved: boolean) => void;
 	};
 
-	let { id, pollKey, adminToken, poll: current, loaded, ondone }: Props = $props();
+	let { id, pollKey, adminToken, loaded, ondone }: Props = $props();
 
 	// svelte-ignore state_referenced_locally
-	const original = draftFromPoll(current, loaded.meta.expiresAt);
+	const original = draftFromPoll(loaded.poll, loaded.meta.expiresAt);
 	let draft = $state<PollDraft>(structuredClone(original));
 	// svelte-ignore state_referenced_locally
 	const today = todayIn(loaded.poll.timezone);
@@ -73,7 +71,9 @@
 	<h1>{t('edit.title')}</h1>
 	{#if pending !== null}
 		<Notice kind="warning" role="alert" title={t('edit.warningTitle')} bind:element={warning}>
-			<p>{t('edit.warning', { count: pending.lost.length })}</p>
+			<p>
+				{t(loaded.poll.type === 'text' ? 'edit.warningText' : 'edit.warning', { count: pending.lost.length })}
+			</p>
 			<ul>
 				{#each pending.lost as option (option.id)}
 					<li>{optionLabel(option, i18n.locale)}</li>

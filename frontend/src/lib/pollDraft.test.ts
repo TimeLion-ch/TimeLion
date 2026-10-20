@@ -385,10 +385,12 @@ describe('editing a poll', () => {
 	it('turns a poll into a draft and back without changes', () => {
 		const draft = draftFromPoll(poll, expires);
 		expect(draft).toMatchObject({
+			type: 'dates',
 			title: 'Grillabend',
 			description: 'Mit Salat',
 			location: '',
 			allowMaybe: false,
+			texts: [],
 			expiryDate: '2026-12-31',
 		});
 		expect(draft.days).toEqual([
@@ -422,6 +424,80 @@ describe('editing a poll', () => {
 		const edited = editedPoll(poll, draft);
 		expect(removedOptions(poll, edited).map((option) => option.id)).toEqual(['aaaaaaaa', 'bbbbbbbb']);
 		expect(edited).not.toHaveProperty('finalOptionId');
+	});
+
+	describe('a text poll', () => {
+		const lunch: Poll = {
+			v: 1,
+			type: 'text',
+			title: 'Mittagessen',
+			location: 'Kantine',
+			timezone: 'Europe/Zurich',
+			options: [
+				{ id: 'aaaaaaaa', text: 'Pizza' },
+				{ id: 'bbbbbbbb', text: 'Sushi' },
+				{ id: 'cccccccc', text: 'Curry' },
+			],
+			allowMaybe: true,
+			minChoices: 1,
+			maxChoices: 2,
+			finalOptionId: 'cccccccc',
+		};
+
+		it('turns into a draft and back without changes', () => {
+			const draft = draftFromPoll(lunch, expires);
+			expect(draft).toMatchObject({
+				type: 'text',
+				title: 'Mittagessen',
+				location: 'Kantine',
+				days: [],
+				texts: [
+					{ id: 'aaaaaaaa', text: 'Pizza' },
+					{ id: 'bbbbbbbb', text: 'Sushi' },
+					{ id: 'cccccccc', text: 'Curry' },
+				],
+				minChoices: '1',
+				maxChoices: '2',
+				expiryDate: '2026-12-31',
+			});
+			expect(validateDraft(draft, today)).toEqual({});
+			expect(editedPoll(lunch, draft)).toEqual(lunch);
+		});
+
+		it('keeps the IDs of options whose text or position changed, and takes new limits', () => {
+			const draft = draftFromPoll(lunch, expires);
+			draft.texts[0]!.text = 'Pizza Margherita';
+			draft.texts.reverse();
+			draft.texts.push({ text: 'Salat' });
+			draft.minChoices = '';
+			draft.maxChoices = '3';
+			const edited = editedPoll(lunch, draft, () => 'dddddddd');
+			expect(edited).toMatchObject({
+				options: [
+					{ id: 'cccccccc', text: 'Curry' },
+					{ id: 'bbbbbbbb', text: 'Sushi' },
+					{ id: 'aaaaaaaa', text: 'Pizza Margherita' },
+					{ id: 'dddddddd', text: 'Salat' },
+				],
+				maxChoices: 3,
+				finalOptionId: 'cccccccc',
+			});
+			expect(edited).not.toHaveProperty('minChoices');
+			expect(removedOptions(lunch, edited)).toEqual([]);
+		});
+
+		it('reports removed options and drops a removed final option', () => {
+			const draft = draftFromPoll(lunch, expires);
+			draft.texts.splice(2, 1);
+			const edited = editedPoll(lunch, draft);
+			expect(removedOptions(lunch, edited)).toEqual([{ id: 'cccccccc', text: 'Curry' }]);
+			expect(edited).not.toHaveProperty('finalOptionId');
+		});
+
+		it('turns a poll without limits into empty limit fields', () => {
+			const { minChoices: _min, maxChoices: _max, ...unlimited } = lunch;
+			expect(draftFromPoll(unlimited, expires)).toMatchObject({ minChoices: '', maxChoices: '' });
+		});
 	});
 
 	it('never reuses an ID for a new option', () => {

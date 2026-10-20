@@ -280,11 +280,12 @@ Polls whose options are free texts ("Pizza", "Sushi", …) instead of dates, wit
   - Editing one of your responses that no longer fits changed limits shows the error until it is fixed.
   - Done when: Vitest covers the response draft rules, and an end-to-end test chooses too many options, sees the error, fixes it and saves.
   - Next: `choiceRule(poll)` (responseDraft.ts) gives the hint's message key and parameters. `ResponseForm` takes `editing`, and `VotePanel` re-creates it for every response it opens (`{#key editing}`). `createTextPoll()` in `e2e/text-poll.spec.ts` creates a poll through the form.
-- [ ] **6.4 Editing text polls** (admin panel). Depends on 6.2.
+- [x] **6.4 Editing text polls** (admin panel). Depends on 6.2. — done 2026-10-20
   - `draftFromPoll` and `editedPoll` handle text polls. Editing an option's text keeps its ID and its votes, as editing a slot's time does; removed options get the existing warning about their votes. The admin can change the limits; responses that no longer fit stay as they are (6.1).
   - The type can't change after creation, because that would drop every vote: the edit form doesn't offer the choice.
   - Mention text polls on the home page and in the README, without promising more than exists.
   - Done when: Vitest covers the round trip poll → draft → poll for text polls, and an end-to-end test edits an option's text and its votes stay.
+  - Next: the edit form lost the type choice already in 6.2b (`chooseType`). Responses that break changed limits aren't flagged to the admin; their authors see the problem when they edit them (6.3).
 
 ## Phase 7: Later / ideas
 

@@ -76,3 +76,26 @@ test('the voting form checks the choice limits', async ({ page, newPage }) => {
 		'No',
 	]);
 });
+
+test('editing the text of an option keeps its votes', async ({ page, newPage }) => {
+	const link = await createTextPoll(page, ['Pizza', 'Sushi'], {});
+	const participant = await newPage();
+	await participant.goto(link);
+	await participant.getByLabel('Your name').fill('Grace Hopper');
+	await participant.locator('form fieldset').nth(0).getByRole('radio', { name: 'Yes' }).check();
+	await participant.getByRole('button', { name: 'Send response' }).click();
+	await expect(participant.getByText('Thank you! Your response is saved.')).toBeVisible();
+
+	await page.getByRole('button', { name: 'Go to the poll' }).click();
+	await page.getByRole('button', { name: 'Manage poll' }).click();
+	await page.getByRole('button', { name: 'Edit poll' }).click();
+	await expect(page.getByRole('heading', { name: 'Edit poll' })).toBeVisible();
+	await expect(page.getByRole('radio', { name: 'Text options' })).toHaveCount(0);
+	await page.getByLabel('Option 1', { exact: true }).fill('Pizza Margherita');
+	await page.getByRole('button', { name: 'Save changes' }).click();
+	await expect(page.getByText('The changes to the poll are saved.')).toBeVisible();
+
+	// The voted option is also tagged "Most popular".
+	await expect(page.getByRole('columnheader')).toHaveText(['Participant', /^Pizza Margherita/, /^Sushi/]);
+	await expect(page.getByRole('row', { name: 'Grace Hopper' }).getByRole('cell')).toHaveText(['Yes', 'No answer']);
+});

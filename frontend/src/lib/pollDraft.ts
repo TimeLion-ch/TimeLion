@@ -328,7 +328,30 @@ function idAssigner(
 }
 
 /** The draft for editing a poll. Options keep their IDs; `expiresAt` (Unix seconds) becomes the expiry date. */
-export function draftFromPoll(poll: DatePoll, expiresAt: number): PollDraft {
+export function draftFromPoll(poll: Poll, expiresAt: number): PollDraft {
+	const common = {
+		title: poll.title,
+		description: poll.description ?? '',
+		location: poll.location ?? '',
+		timezone: poll.timezone,
+		allowMaybe: poll.allowMaybe,
+		expiryDate: expiryDateOf(expiresAt, poll.timezone),
+	};
+	if (poll.type === 'text') {
+		return {
+			...common,
+			type: 'text',
+			days: [],
+			texts: poll.options.map(({ id, text }) => ({ id, text })),
+			minChoices: poll.minChoices?.toString() ?? '',
+			maxChoices: poll.maxChoices?.toString() ?? '',
+		};
+	}
+	return { ...common, type: 'dates', days: draftDays(poll), texts: [], minChoices: '', maxChoices: '' };
+}
+
+/** The days of a date poll, each with its whole-day option or its slots. */
+function draftDays(poll: DatePoll): DraftDay[] {
 	const days = new Map<string, DraftDay>();
 	for (const option of poll.options) {
 		const [date = '', time] = option.start.split('T');
@@ -340,19 +363,7 @@ export function draftFromPoll(poll: DatePoll, expiresAt: number): PollDraft {
 			day.slots.push({ id: option.id, start: time, end: option.end?.split('T')[1] ?? '' });
 		}
 	}
-	return {
-		title: poll.title,
-		description: poll.description ?? '',
-		location: poll.location ?? '',
-		timezone: poll.timezone,
-		allowMaybe: poll.allowMaybe,
-		type: 'dates',
-		days: [...days.values()].sort((a, b) => (a.date < b.date ? -1 : 1)),
-		texts: [],
-		minChoices: '',
-		maxChoices: '',
-		expiryDate: expiryDateOf(expiresAt, poll.timezone),
-	};
+	return [...days.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
 }
 
 /** The day (in the timezone) whose end is the expiry. */
