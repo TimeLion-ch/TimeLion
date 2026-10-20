@@ -59,7 +59,10 @@
 		} else {
 			poll.finalOptionId = finalChoice;
 		}
-		return run(() => updatePoll(id, pollKey, adminToken, poll), 'admin.finalSaved');
+		return run(
+			() => updatePoll(id, pollKey, adminToken, poll),
+			poll.type === 'text' ? 'admin.finalSavedText' : 'admin.finalSaved',
+		);
 	}
 
 	function toggleClosed() {
@@ -116,15 +119,21 @@
 
 		<div class="group">
 			<h3>{t('admin.edit')}</h3>
-			<p class="muted">{t('admin.editHint')}</p>
+			<p class="muted">{loaded.poll.type === 'text' ? t('admin.editHintText') : t('admin.editHint')}</p>
 			<div>
 				<Button onclick={onedit}>{t('admin.edit')}</Button>
 			</div>
 		</div>
 
 		<div class="group">
-			<h3><label for="{uid}-final">{t('admin.final')}</label></h3>
-			<p id="{uid}-final-hint" class="muted">{t('admin.finalHint')}</p>
+			<h3>
+				<label for="{uid}-final">
+					{loaded.poll.type === 'text' ? t('admin.finalText') : t('admin.final')}
+				</label>
+			</h3>
+			<p id="{uid}-final-hint" class="muted">
+				{loaded.poll.type === 'text' ? t('admin.finalHintText') : t('admin.finalHint')}
+			</p>
 			<div class="row">
 				<select id="{uid}-final" bind:value={finalChoice} aria-describedby="{uid}-final-hint">
 					<option value="">{t('admin.finalNone')}</option>

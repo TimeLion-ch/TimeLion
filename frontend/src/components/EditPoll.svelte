@@ -71,7 +71,9 @@
 	<h1>{t('edit.title')}</h1>
 	{#if pending !== null}
 		<Notice kind="warning" role="alert" title={t('edit.warningTitle')} bind:element={warning}>
-			<p>{t('edit.warning', { count: pending.lost.length })}</p>
+			<p>
+				{t(loaded.poll.type === 'text' ? 'edit.warningText' : 'edit.warning', { count: pending.lost.length })}
+			</p>
 			<ul>
 				{#each pending.lost as option (option.id)}
 					<li>{optionLabel(option, i18n.locale)}</li>
@@ -91,6 +93,7 @@
 			submitLabel={t('vote.saveChanges')}
 			{busy}
 			autoExpiry={false}
+			chooseType={false}
 			error={error && t(error)}
 			onsubmit={submit}
 			oncancel={() => ondone(false)}
@@ -106,6 +109,7 @@
 
 	ul {
 		margin: 0 0 var(--space-3);
+		overflow-wrap: anywhere;
 	}
 
 	.actions {

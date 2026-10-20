@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api, ApiError, serverLimits, type StoredPoll } from './api';
 import { encryptJson, generatePollKey, importKey } from './crypto';
-import { parsePoll, parseResponse, type Poll, type PollResponse } from './model';
+import { parsePoll, parseResponse, type Poll, type PollResponse, type TextPoll } from './model';
 import {
 	closePoll,
 	createPoll,
@@ -17,6 +17,7 @@ import {
 
 const poll: Poll = {
 	v: 1,
+	type: 'dates',
 	title: 'Grillabend',
 	description: 'Bring etwas zum Grillieren mit.',
 	timezone: 'Europe/Zurich',
@@ -307,6 +308,37 @@ describe('responses', () => {
 		expect(api.updateResponse).not.toHaveBeenCalled();
 	});
 
+	it('refuses a response that breaks the choice limits, without sending anything', async () => {
+		const lunch: TextPoll = {
+			v: 1,
+			type: 'text',
+			title: 'Mittagessen',
+			timezone: 'Europe/Zurich',
+			options: [
+				{ id: 'aaaaaaaa', text: 'Pizza' },
+				{ id: 'bbbbbbbb', text: 'Sushi' },
+				{ id: 'cccccccc', text: 'Curry' },
+			],
+			allowMaybe: true,
+			minChoices: 1,
+			maxChoices: 2,
+		};
+		const { id, key, adminToken } = await createPoll(lunch, server.now + 1);
+		const fits: PollResponse = { v: 1, name: 'Zoë', votes: { aaaaaaaa: 'yes', bbbbbbbb: 'maybe', cccccccc: 'no' } };
+		const created = await submitResponse(id, key, lunch, fits);
+
+		const tooMany: PollResponse = { ...fits, votes: { ...fits.votes, cccccccc: 'maybe' } };
+		const tooFew: PollResponse = { ...fits, votes: { aaaaaaaa: 'no' } };
+		await expect(submitResponse(id, key, lunch, tooMany)).rejects.toThrow(TypeError);
+		await expect(editResponse(id, key, lunch, created.id, created.editToken, tooFew)).rejects.toThrow(TypeError);
+		expect(api.createResponse).toHaveBeenCalledTimes(1);
+		expect(api.updateResponse).not.toHaveBeenCalled();
+
+		// After the admin lowers the maximum, the response no longer fits, but it stays readable.
+		await updatePoll(id, key, adminToken, { ...lunch, maxChoices: 1 });
+		expect((await loadPoll(id, key)).responses.map((entry) => entry.response)).toEqual([fits]);
+	});
+
 	it('skips responses that cannot be read, and lists them', async () => {
 		const { id, key } = await createPoll(poll, server.now + 1);
 		const pollKey = await importKey(key);
@@ -384,6 +416,7 @@ describe('sizes', () => {
 		const worst = (length: number) => '\u0001'.repeat(length);
 		const largestPoll: Poll = {
 			v: 1,
+			type: 'dates',
 			title: worst(200),
 			description: worst(2000),
 			location: worst(200),
@@ -411,5 +444,30 @@ describe('sizes', () => {
 
 		expect(pollCiphertext.length).toBeLessThanOrEqual(serverLimits.pollCiphertextBytes);
 		expect(responseCiphertext.length).toBeLessThanOrEqual(serverLimits.responseCiphertextBytes);
+	});
+
+	it('keeps the largest valid text poll within the server limit', async () => {
+		const worst = (length: number) => '\u0001'.repeat(length);
+		// Option texts can't contain control characters, so a code unit costs at most 3 bytes (e.g. €) as JSON.
+		const largestPoll: TextPoll = {
+			v: 1,
+			type: 'text',
+			title: worst(200),
+			description: worst(2000),
+			location: worst(200),
+			timezone: 'America/Argentina/Buenos_Aires',
+			options: Array.from({ length: 100 }, (_, i) => ({
+				id: i.toString(16).padStart(8, '0'),
+				text: '€'.repeat(100),
+			})),
+			allowMaybe: true,
+			finalOptionId: '00000063',
+			minChoices: 100,
+			maxChoices: 100,
+		};
+
+		expect(parsePoll(largestPoll)).toEqual(largestPoll);
+		const ciphertext = await encryptJson(await generatePollKey(), 'poll', largestPoll);
+		expect(ciphertext.length).toBeLessThanOrEqual(serverLimits.pollCiphertextBytes);
 	});
 });

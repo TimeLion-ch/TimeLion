@@ -9,7 +9,7 @@
 
 import { api, type CreatedResponse, type PollPatch, type UpdatedPoll, type UpdatedResponse } from './api';
 import { DecryptionError, decryptJson, encryptJson, exportKey, generatePollKey, importKey, type Kind } from './crypto';
-import { parsePoll, parseResponse, type Poll, type PollResponse } from './model';
+import { choiceProblem, parsePoll, parseResponse, type Poll, type PollResponse } from './model';
 
 /** The server's metadata, which it stores in plaintext (CLAUDE.md → What the server can see). */
 export type PollMeta = { id: string; createdAt: number; updatedAt: number; expiresAt: number; closedAt: number | null };
@@ -74,7 +74,8 @@ export async function loadPoll(id: string, key: string): Promise<LoadedPoll> {
 }
 
 /**
- * Votes for options the poll doesn't have are dropped before encrypting.
+ * Votes for options the poll doesn't have are dropped before encrypting. A response that breaks the poll's choice
+ * limits is refused here, because the server can't check them: it never sees votes.
  *
  * @returns the response's ID and edit token, which the server can't show again
  */
@@ -166,6 +167,9 @@ function checkedResponse(response: PollResponse, poll: Poll): PollResponse {
 	const document = parseResponse(response, poll);
 	if (document === null) {
 		throw new TypeError('Invalid response document.');
+	}
+	if (choiceProblem(poll, document.votes) !== null) {
+		throw new TypeError('The response breaks the choice limits of the poll.');
 	}
 	return document;
 }

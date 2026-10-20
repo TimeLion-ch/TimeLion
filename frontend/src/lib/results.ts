@@ -40,7 +40,7 @@ export function bestOptions(tallies: Map<string, Tally>): Set<string> {
 	return ids;
 }
 
-/** True if any option has a time; then the poll's timezone matters. */
+/** True if any option has a time; then the poll's timezone matters. Text polls have no times. */
 export function hasTimes(poll: Poll): boolean {
-	return poll.options.some((option) => option.start.includes('T'));
+	return poll.type === 'dates' && poll.options.some((option) => option.start.includes('T'));
 }

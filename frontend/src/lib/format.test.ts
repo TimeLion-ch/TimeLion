@@ -31,24 +31,24 @@ describe('formatDate and formatMonth', () => {
 describe('formatOption', () => {
 	it('formats a whole day', () => {
 		expect(formatOption({ id: '00000000', start: '2026-11-03' }, 'de')).toEqual({
-			date: formatDate('2026-11-03', 'de'),
+			main: formatDate('2026-11-03', 'de'),
 			time: null,
 		});
 	});
 
 	it('formats several whole days as a range', () => {
-		const { date, time } = formatOption({ id: '00000000', start: '2026-11-03', end: '2026-11-05' }, 'en');
-		expect(plain(date)).toMatch(/3.*5 Nov/);
+		const { main, time } = formatOption({ id: '00000000', start: '2026-11-03', end: '2026-11-05' }, 'en');
+		expect(plain(main)).toMatch(/3.*5 Nov/);
 		expect(time).toBeNull();
 	});
 
 	it('formats a start time and a time range on one day', () => {
 		expect(formatOption({ id: '00000000', start: '2026-11-03T09:05' }, 'de').time).toBe('09:05');
-		const { date, time } = formatOption(
+		const { main, time } = formatOption(
 			{ id: '00000000', start: '2026-11-03T18:00', end: '2026-11-03T22:30' },
 			'en',
 		);
-		expect(plain(date)).toContain('3 Nov 2026');
+		expect(plain(main)).toContain('3 Nov 2026');
 		expect(plain(time ?? '')).toMatch(/^18:00 ?– ?22:30$/);
 	});
 
@@ -64,6 +64,12 @@ describe('formatOption', () => {
 			'Di., 3. Nov. 2026, 18:00',
 		);
 		expect(plain(optionLabel({ id: '00000000', start: '2026-11-03' }, 'de'))).toBe('Di., 3. Nov. 2026');
+	});
+
+	it('shows a text option as its text', () => {
+		const option = { id: '00000000', text: 'Pizza, 2026-11-03' };
+		expect(formatOption(option, 'de', 'long')).toEqual({ main: 'Pizza, 2026-11-03', time: null });
+		expect(optionLabel(option, 'en')).toBe('Pizza, 2026-11-03');
 	});
 
 	it('formats times with a 24-hour clock', () => {

@@ -2,8 +2,8 @@
 	import { tick } from 'svelte';
 	import { formatOption } from '../lib/format';
 	import { i18n, t } from '../lib/i18n.svelte';
-	import { limits, type Poll } from '../lib/model';
-	import { choices, validateResponse, type ResponseDraft } from '../lib/responseDraft';
+	import { choiceCount, choiceProblem, limits, type Poll } from '../lib/model';
+	import { choiceRule, choices, validateResponse, type ResponseDraft } from '../lib/responseDraft';
 	import Button from './Button.svelte';
 	import Notice from './Notice.svelte';
 	import TextField from './TextField.svelte';
@@ -14,18 +14,33 @@
 		poll: Poll;
 		draft: ResponseDraft;
 		submitLabel: string;
+		/** For an existing response: one that no longer fits the choice limits shows the problem right away. */
+		editing?: boolean;
 		busy?: boolean;
 		error?: string | undefined;
 		onsubmit: (draft: ResponseDraft) => void;
 		oncancel?: (() => void) | undefined;
 	};
 
-	let { poll, draft = $bindable(), submitLabel, busy = false, error, onsubmit, oncancel }: Props = $props();
+	let {
+		poll,
+		draft = $bindable(),
+		submitLabel,
+		editing = false,
+		busy = false,
+		error,
+		onsubmit,
+		oncancel,
+	}: Props = $props();
 
 	const id = $props.id();
-	let attempted = $state(false);
-	const errors = $derived(attempted ? validateResponse(draft) : {});
+	/** Errors show up after the first attempt to submit, and then follow every change. */
+	// svelte-ignore state_referenced_locally
+	let attempted = $state(editing && choiceProblem(poll, draft.votes) !== null);
+	const errors = $derived(attempted ? validateResponse(draft, poll) : {});
+	const rule = $derived(choiceRule(poll));
 	let nameField: HTMLInputElement | HTMLTextAreaElement | undefined = $state();
+	let optionList: HTMLElement | undefined = $state();
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
@@ -36,6 +51,11 @@
 		if (errors.name !== undefined) {
 			await tick();
 			nameField?.focus();
+			return;
+		}
+		if (errors.choices !== undefined) {
+			await tick();
+			optionList?.focus();
 			return;
 		}
 		onsubmit(draft);
@@ -53,13 +73,35 @@
 		error={errors.name && t(errors.name)}
 	/>
 
-	<ul class="options">
+	{#if rule !== null}
+		<div class="limit">
+			<p id="{id}-limit">
+				<strong>{t(rule.key, rule.params)}</strong>
+				{#if poll.allowMaybe}{t('vote.limit.maybeCounts')}{/if}
+			</p>
+			<p role="status">{t('vote.limit.count', { count: choiceCount(poll, draft.votes) })}</p>
+			{#if errors.choices !== undefined}
+				<p id="{id}-choices-error" class="error">{t(errors.choices)}</p>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- With choice limits, the list is named by them, so that focusing it after a failed submit explains why. -->
+	<!-- Only ever tabindex -1: focusable by script, not in the tab order. -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<ul
+		class="options"
+		bind:this={optionList}
+		tabindex={rule === null ? undefined : -1}
+		aria-labelledby={rule === null ? undefined : `${id}-limit`}
+		aria-describedby={errors.choices === undefined ? undefined : `${id}-choices-error`}
+	>
 		{#each poll.options as option (option.id)}
 			{@const formatted = formatOption(option, i18n.locale)}
 			<li>
 				<fieldset>
 					<legend>
-						<span class="date">{formatted.date}</span>
+						<span>{formatted.main}</span>
 						{#if formatted.time !== null}<span class="time">{formatted.time}</span>{/if}
 					</legend>
 					<div class="choices">
@@ -109,6 +151,24 @@
 		gap: var(--space-3);
 	}
 
+	.limit p {
+		margin: 0;
+	}
+
+	.error {
+		color: var(--color-danger);
+		font-weight: 600;
+	}
+
+	.options:focus {
+		outline: none;
+	}
+
+	.options:focus-visible {
+		outline: 3px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+
 	.options {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
@@ -133,6 +193,7 @@
 		margin-bottom: var(--space-2);
 		padding: 0;
 		font-weight: 700;
+		overflow-wrap: anywhere;
 	}
 
 	.time {

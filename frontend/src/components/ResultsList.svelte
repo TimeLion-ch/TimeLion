@@ -41,7 +41,7 @@
 		{@const counts = tallies.get(option.id)}
 		<li class={{ best: best.has(option.id), final: poll.finalOptionId === option.id }}>
 			<h3>
-				<span>{formatted.date}</span>
+				<span>{formatted.main}</span>
 				{#if formatted.time !== null}<span class="time">{formatted.time}</span>{/if}
 			</h3>
 			{#if poll.finalOptionId === option.id}
@@ -118,6 +118,7 @@
 	h3 {
 		margin: 0;
 		font-size: 1rem;
+		overflow-wrap: anywhere;
 	}
 
 	.time {

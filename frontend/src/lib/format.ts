@@ -1,6 +1,7 @@
 /**
  * Locale-aware formatting with `Intl.DateTimeFormat` (no date library). Option dates and times are wall-clock values
- * in the poll's timezone (model.ts), so they are formatted as UTC, which leaves them exactly as written.
+ * in the poll's timezone (model.ts), so they are formatted as UTC, which leaves them exactly as written. Text options
+ * are shown as their text.
  */
 
 import { addDays, dateToUtc } from './dates';
@@ -56,28 +57,32 @@ export function formatTimestamp(seconds: number, locale: Locale): string {
 }
 
 export type FormattedOption = {
-	date: string;
-	/** Null for whole days. */
+	/** The date, or a text option's text. */
+	main: string;
+	/** Null for whole days and text options. */
 	time: string | null;
 };
 
 export function formatOption(option: PollOption, locale: Locale, style: DateStyle = 'short'): FormattedOption {
+	if ('text' in option) {
+		return { main: option.text, time: null };
+	}
 	const tag = intlLocales[locale];
 	const [startDate = '', startTime] = option.start.split('T');
 	const [endDate = '', endTime] = option.end?.split('T') ?? [];
 
 	if (startTime === undefined) {
 		if (option.end === undefined) {
-			return { date: formatDate(startDate, locale, style), time: null };
+			return { main: formatDate(startDate, locale, style), time: null };
 		}
 		const range = new Intl.DateTimeFormat(tag, dateOptions(style));
-		return { date: range.formatRange(dateToUtc(startDate), dateToUtc(endDate)), time: null };
+		return { main: range.formatRange(dateToUtc(startDate), dateToUtc(endDate)), time: null };
 	}
 
 	const date = formatDate(startDate, locale, style);
 	const at = (day: string, time: string) => dateToUtc(day) + minutes(time) * 60_000;
 	if (endTime === undefined) {
-		return { date, time: formatTime(startTime, locale) };
+		return { main: date, time: formatTime(startTime, locale) };
 	}
 	const sameDay = endDate === startDate;
 	const range = new Intl.DateTimeFormat(tag, {
@@ -86,13 +91,13 @@ export function formatOption(option: PollOption, locale: Locale, style: DateStyl
 		minute: '2-digit',
 		...(sameDay ? {} : { weekday: 'short' }),
 	});
-	return { date, time: range.formatRange(at(startDate, startTime), at(endDate, endTime)) };
+	return { main: date, time: range.formatRange(at(startDate, startTime), at(endDate, endTime)) };
 }
 
-/** One line, e.g. for labels: "Di., 3. Nov. 2026, 18:00–22:00". */
+/** One line, e.g. for labels: "Di., 3. Nov. 2026, 18:00–22:00", or a text option's text. */
 export function optionLabel(option: PollOption, locale: Locale, style: DateStyle = 'short'): string {
-	const { date, time } = formatOption(option, locale, style);
-	return time === null ? date : `${date}, ${time}`;
+	const { main, time } = formatOption(option, locale, style);
+	return time === null ? main : `${main}, ${time}`;
 }
 
 /** `HH:MM` in the locale's clock. */
