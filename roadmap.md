@@ -32,7 +32,7 @@ If a task grows beyond roughly 400 changed lines (not counting tests and lock fi
 | D9  | License: AGPL-3.0-only instead of GPL-3.0-only, so that whoever runs a modified public instance must publish their changes           | 2026-10-19 |
 | D10 | Legal texts live in `config.php` (server only) and are served by the API, so the operator's details stay out of the repository; the privacy policy is German only | 2026-10-19 |
 
-Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), notifications (6.6).
+Decisions still open are marked 🧭 on the tasks that need them: legal page details (4.2), what counts as a choice in text polls (6.1), notifications (7.6).
 
 ## Phase 0: Foundation ✅
 
@@ -250,15 +250,43 @@ Every UI task: all text goes in both locale files; there are no CSP violations; 
 - [x] **5.4 FTP deploy** (the host has no SSH, D6) — done 2026-10-18
   - An FTP deploy action plus a token-protected, one-time migration endpoint.
 
-## Phase 6: Later / ideas
+## Phase 6: Text polls
 
-- [ ] **6.1** French and Italian translations
-- [ ] **6.2** Password-protected polls: the poll key is wrapped with a PBKDF2-derived key, so the link alone isn't enough
-- [ ] **6.3** Sign-up sheet mode: a maximum number of participants per option
-- [ ] **6.4** Hidden responses, where only the admin sees votes: responses encrypted to an admin public key (ECDH P-256 + AES-GCM) 🧭 needs a design review
-- [ ] **6.5** Comments on polls
-- [ ] **6.6** Notifications 🧭 this means storing e-mail addresses, a privacy trade-off; perhaps opt-in "someone voted" mails without content
-- [ ] **6.7** Reproducible builds and a published hash of `index.html`, so users can verify the code they are served
+Polls whose options are free texts ("Pizza", "Sushi", …) instead of dates, with an optional minimum and maximum of options each participant chooses. The creator picks dates or text options when creating the poll. The type, the texts and the limits live inside the encrypted poll document, so the API doesn't change and the server stores nothing new (CLAUDE.md, rule 1). Polls created so far stay date polls. The phase doesn't depend on Phase 5, and the Phase 3 rules for UI tasks apply (both locale files, no CSP violations, 360 px, both themes, keyboard).
+
+- [ ] **6.1 Model: text options and choice limits** 🧭 does "maybe" count as a choice?
+  - `Poll` gets `type: 'dates' | 'text'`. `parsePoll` reads an absent `type` as `'dates'`, so every existing poll stays valid and the document stays `v: 1`. (Not `kind`: that word already names the AAD's `poll` and `response`.)
+  - A text poll's options are `{ id (8 hex), text (1–100, not blank) }`. A poll never mixes option forms; a document whose options don't match its type is invalid. 100 options of 100 characters (3 UTF-8 bytes each, then base64url) stay below the 64 KiB poll ciphertext limit; a test encrypts such a poll and checks it against `serverLimits.pollCiphertextBytes`.
+  - Text polls may have `minChoices` and `maxChoices`, each optional: whole numbers with 1 ≤ min ≤ max ≤ the number of options. `parsePoll` drops a limit that doesn't fit (like an unknown `finalOptionId`), so a limit never makes a poll unreadable. Date polls have no limits.
+  - What counts as a choice is the 🧭. Proposed: yes **and** maybe (maybe is a weaker yes, and if it didn't count, answering maybe everywhere would get around the maximum); no and unanswered don't count.
+  - Add `choiceProblem(poll, votes)`, returning `'tooFew' | 'tooMany' | null`. `submitResponse` and `editResponse` (polls.ts) refuse a response that breaks the limits (`TypeError`, like other invalid documents), but `parseResponse` doesn't check them, so a response from before the admin changed the limits stays readable. The server never sees votes, so a modified browser can ignore the limits; the UI must not claim otherwise (rule 10).
+  - Narrow on `type` wherever code assumes date options (`format.ts`, `hasTimes` in `results.ts`, `ics.ts`, `pollDraft.ts`, the results and voting components). `format.ts` shows a text option as its text, so once this task is done a text poll displays and takes votes. "Add to calendar" is offered for date polls only.
+  - Done when: Vitest covers parsing (old documents without `type`, mismatched options, limits that don't fit, hostile values), `choiceProblem`, and the size test.
+- [ ] **6.2 Create form: dates or text options**. Depends on 6.1.
+  - At the top of the options part of `PollForm`, a choice between "Dates" and "Text options" (a radio group). Switching keeps what was entered for the other type until the poll is created; only the chosen type is saved.
+  - Text options: a list editor (e.g. `components/TextOptionList.svelte`) to add, edit, remove and reorder options (move up and down buttons, no drag and drop). The options keep the order they were entered in.
+  - Two optional number fields, shown for text polls only: the minimum and the maximum of choices per participant. Empty means no limit.
+  - `pollDraft.ts`: the draft gets the type, the text options (with their IDs when editing, like slots) and both limits. `validateDraft` reports missing options, blank or duplicate texts (trimmed, ignoring case), limits that aren't whole numbers, a minimum above the maximum, and a limit above the number of options. `buildPoll` writes the text options in order. A text poll's default expiry is 30 days after today. Text polls keep a `timezone`, because the expiry is the end of a day in it, but the form shows it only for dates.
+  - Done when: Vitest covers the draft rules, and an end-to-end test creates a text poll with limits and sees its options on the poll page.
+- [ ] **6.3 Voting with choice limits**. Depends on 6.2.
+  - In text polls with limits, the voting form says how many options to choose ("2 to 3", "at least 2", "at most 3", "exactly 2") and counts the choices so far. `validateResponse` takes the poll and reports `choiceProblem`; like the name error, it shows after the first submit and then follows every change.
+  - Editing one of your responses that no longer fits changed limits shows the error until it is fixed.
+  - Done when: Vitest covers the response draft rules, and an end-to-end test chooses too many options, sees the error, fixes it and saves.
+- [ ] **6.4 Editing text polls** (admin panel). Depends on 6.2.
+  - `draftFromPoll` and `editedPoll` handle text polls. Editing an option's text keeps its ID and its votes, as editing a slot's time does; removed options get the existing warning about their votes. The admin can change the limits; responses that no longer fit stay as they are (6.1).
+  - The type can't change after creation, because that would drop every vote: the edit form doesn't offer the choice.
+  - Mention text polls on the home page and in the README, without promising more than exists.
+  - Done when: Vitest covers the round trip poll → draft → poll for text polls, and an end-to-end test edits an option's text and its votes stay.
+
+## Phase 7: Later / ideas
+
+- [ ] **7.1** French and Italian translations
+- [ ] **7.2** Password-protected polls: the poll key is wrapped with a PBKDF2-derived key, so the link alone isn't enough
+- [ ] **7.3** Sign-up sheet mode: a maximum number of participants per option
+- [ ] **7.4** Hidden responses, where only the admin sees votes: responses encrypted to an admin public key (ECDH P-256 + AES-GCM) 🧭 needs a design review
+- [ ] **7.5** Comments on polls
+- [ ] **7.6** Notifications 🧭 this means storing e-mail addresses, a privacy trade-off; perhaps opt-in "someone voted" mails without content
+- [ ] **7.7** Reproducible builds and a published hash of `index.html`, so users can verify the code they are served
 
 ## Inbox
 
