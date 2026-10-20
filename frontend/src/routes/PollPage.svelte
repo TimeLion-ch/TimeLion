@@ -66,10 +66,14 @@
 	}
 
 	function addToCalendar() {
-		if (poll === undefined || finalOption === undefined) {
+		if (poll?.type !== 'dates') {
 			return;
 		}
-		const ics = buildIcs(poll, finalOption, { pollId: id, host: location.hostname, now: Date.now() });
+		const option = poll.options.find((candidate) => candidate.id === poll.finalOptionId);
+		if (option === undefined) {
+			return;
+		}
+		const ics = buildIcs(poll, option, { pollId: id, host: location.hostname, now: Date.now() });
 		downloadText(icsFilename(poll.title), ics, 'text/calendar;charset=utf-8');
 	}
 
@@ -156,9 +160,9 @@
 			<Notice kind="success" role="status"><p>{t('edit.saved')}</p></Notice>
 		{/if}
 		{#if finalOption !== undefined}
-			<Notice kind="success" title={t('poll.finalTitle')}>
-				<p>{optionLabel(finalOption, i18n.locale, 'long')}</p>
-				{#if loaded.meta.closedAt !== null}
+			<Notice kind="success" title={poll.type === 'text' ? t('poll.finalTitleText') : t('poll.finalTitle')}>
+				<p class="final">{optionLabel(finalOption, i18n.locale, 'long')}</p>
+				{#if loaded.meta.closedAt !== null && poll.type === 'dates'}
 					<div class="calendar">
 						<Button variant="primary" onclick={addToCalendar}>{t('poll.addToCalendar')}</Button>
 						<p class="hint">{t('poll.addToCalendarHint')}</p>
@@ -263,6 +267,10 @@
 
 	.description {
 		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.final {
 		overflow-wrap: anywhere;
 	}
 

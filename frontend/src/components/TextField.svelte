@@ -14,6 +14,8 @@
 		min?: string;
 		max?: string;
 		autocomplete?: 'off' | 'name';
+		/** The on-screen keyboard, e.g. digits only. */
+		inputmode?: 'numeric';
 		hint?: string;
 		/** Marks the field invalid and is read out with it. */
 		error?: string | undefined;
@@ -33,6 +35,7 @@
 		min,
 		max,
 		autocomplete,
+		inputmode,
 		hint,
 		error,
 		element = $bindable(),
@@ -77,6 +80,7 @@
 			{min}
 			{max}
 			{autocomplete}
+			{inputmode}
 			aria-invalid={error !== undefined || undefined}
 			aria-describedby={describedBy}
 		/>

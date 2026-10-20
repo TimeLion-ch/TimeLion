@@ -10,7 +10,7 @@
 
 export type Vote = 'yes' | 'maybe' | 'no';
 
-export type PollOption = {
+export type DateOption = {
 	/** 8 lowercase hex characters, unique within the poll. Votes refer to options by this ID. */
 	id: string;
 	/** `YYYY-MM-DD` for a whole day, or `YYYY-MM-DDTHH:MM`: wall-clock time in the poll's timezone, no offset. */
@@ -19,17 +19,36 @@ export type PollOption = {
 	end?: string;
 };
 
-export type Poll = {
+export type TextOption = {
+	/** Like a date option's ID. */
+	id: string;
+	/** One line, not blank, without control characters or lone surrogates: no code unit costs more than 3 bytes as JSON. */
+	text: string;
+};
+
+export type PollOption = DateOption | TextOption;
+
+type PollBase = {
 	v: 1;
 	title: string;
 	description?: string;
 	location?: string;
-	/** IANA time zone name, e.g. `Europe/Zurich`. */
+	/** IANA time zone name, e.g. `Europe/Zurich`. Text polls have one too: the expiry is the end of a day in it. */
 	timezone: string;
-	options: PollOption[];
 	allowMaybe: boolean;
 	finalOptionId?: string;
 };
+
+/** Documents without a `type` are date polls: every poll from before text polls existed. */
+export type DatePoll = PollBase & { type: 'dates'; options: DateOption[] };
+
+/**
+ * The limits are how many options each participant chooses (yes or maybe, see `choiceProblem`). Only the browser can
+ * check them: the server never sees votes.
+ */
+export type TextPoll = PollBase & { type: 'text'; options: TextOption[]; minChoices?: number; maxChoices?: number };
+
+export type Poll = DatePoll | TextPoll;
 
 /** Named PollResponse so that it doesn't shadow the DOM's `Response`. */
 export type PollResponse = {
@@ -46,6 +65,7 @@ export const limits = {
 	location: 200,
 	timezone: 64,
 	options: 100,
+	optionText: 100,
 	name: 80,
 	comment: 500,
 } as const;
@@ -54,30 +74,48 @@ const OPTION_ID = /^[0-9a-f]{8}$/;
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 const TIME_ZONE = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+)*$/;
+/** Control characters and lone surrogates: JSON escapes them as `\uXXXX`, 6 bytes for one code unit. */
+const CONTROL_OR_SURROGATE = /[\p{Cc}\p{Cs}]/u;
 
 /** @returns the poll, or null if `value` is not a valid v1 poll document */
 export function parsePoll(value: unknown): Poll | null {
 	if (!isRecord(value) || field(value, 'v') !== 1) {
 		return null;
 	}
+	// Only an absent type means dates; `null` or anything else unknown makes the poll invalid.
+	const stored = field(value, 'type');
+	const type = stored === undefined ? 'dates' : stored;
 	const title = requiredText(field(value, 'title'), limits.title);
 	const description = optionalText(field(value, 'description'), limits.description);
 	const location = optionalText(field(value, 'location'), limits.location);
 	const timezone = field(value, 'timezone');
-	const options = parseOptions(field(value, 'options'));
 	const allowMaybe = field(value, 'allowMaybe');
 	if (
 		title === null ||
 		description === null ||
 		location === null ||
 		!isTimeZone(timezone) ||
-		options === null ||
 		typeof allowMaybe !== 'boolean'
 	) {
 		return null;
 	}
 
-	const poll: Poll = { v: 1, title, timezone, options, allowMaybe };
+	let poll: Poll;
+	if (type === 'dates') {
+		const options = parseOptions(field(value, 'options'), parseDateOption);
+		if (options === null) {
+			return null;
+		}
+		poll = { v: 1, type, title, timezone, options, allowMaybe };
+	} else if (type === 'text') {
+		const options = parseOptions(field(value, 'options'), parseTextOption);
+		if (options === null) {
+			return null;
+		}
+		poll = { v: 1, type, title, timezone, options, allowMaybe, ...parseChoiceLimits(value, options.length) };
+	} else {
+		return null;
+	}
 	if (description !== undefined) {
 		poll.description = description;
 	}
@@ -86,7 +124,7 @@ export function parsePoll(value: unknown): Poll | null {
 	}
 	// A final option that no longer exists is ignored, like votes for it.
 	const finalOptionId = field(value, 'finalOptionId');
-	if (typeof finalOptionId === 'string' && options.some((option) => option.id === finalOptionId)) {
+	if (typeof finalOptionId === 'string' && poll.options.some((option) => option.id === finalOptionId)) {
 		poll.finalOptionId = finalOptionId;
 	}
 	return poll;
@@ -122,6 +160,39 @@ export function parseResponse(value: unknown, poll: Poll): PollResponse | null {
 	return response;
 }
 
+/**
+ * Yes and maybe count as a choice (D11): maybe is a weaker yes, and answering maybe everywhere mustn't get around the
+ * maximum. No and unanswered don't count.
+ */
+export function choiceCount(poll: Poll, votes: Readonly<Record<string, Vote>>): number {
+	let count = 0;
+	for (const { id } of poll.options) {
+		const vote = Object.hasOwn(votes, id) ? votes[id] : undefined;
+		if (vote === 'yes' || vote === 'maybe') {
+			count++;
+		}
+	}
+	return count;
+}
+
+/**
+ * Whether the votes break the poll's choice limits. `parseResponse` doesn't check this, so a response from before the
+ * admin changed the limits stays readable.
+ */
+export function choiceProblem(poll: Poll, votes: Readonly<Record<string, Vote>>): 'tooFew' | 'tooMany' | null {
+	if (poll.type !== 'text') {
+		return null;
+	}
+	const count = choiceCount(poll, votes);
+	if (poll.minChoices !== undefined && count < poll.minChoices) {
+		return 'tooFew';
+	}
+	if (poll.maxChoices !== undefined && count > poll.maxChoices) {
+		return 'tooMany';
+	}
+	return null;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -144,11 +215,11 @@ function optionalText(value: unknown, max: number): string | undefined | null {
 	return typeof value === 'string' && value.length <= max ? value : null;
 }
 
-function parseOptions(value: unknown): PollOption[] | null {
+function parseOptions<T extends PollOption>(value: unknown, parseOption: (item: unknown) => T | null): T[] | null {
 	if (!Array.isArray(value) || value.length < 1 || value.length > limits.options) {
 		return null;
 	}
-	const options: PollOption[] = [];
+	const options: T[] = [];
 	const ids = new Set<string>();
 	for (const item of value as unknown[]) {
 		const option = parseOption(item);
@@ -161,7 +232,7 @@ function parseOptions(value: unknown): PollOption[] | null {
 	return options;
 }
 
-function parseOption(value: unknown): PollOption | null {
+function parseDateOption(value: unknown): DateOption | null {
 	if (!isRecord(value)) {
 		return null;
 	}
@@ -179,6 +250,39 @@ function parseOption(value: unknown): PollOption | null {
 		return null;
 	}
 	return { id, start, end };
+}
+
+function parseTextOption(value: unknown): TextOption | null {
+	if (!isRecord(value)) {
+		return null;
+	}
+	const id = field(value, 'id');
+	const text = requiredText(field(value, 'text'), limits.optionText);
+	if (typeof id !== 'string' || !OPTION_ID.test(id) || text === null || CONTROL_OR_SURROGATE.test(text)) {
+		return null;
+	}
+	return { id, text };
+}
+
+/**
+ * Each limit is a whole number from 1 to the number of options. A limit that doesn't fit is dropped, like an unknown
+ * final option, so that a limit never makes a poll unreadable; a minimum above the maximum drops both.
+ */
+function parseChoiceLimits(
+	value: Record<string, unknown>,
+	count: number,
+): { minChoices?: number; maxChoices?: number } {
+	const fits = (limit: unknown): limit is number =>
+		typeof limit === 'number' && Number.isInteger(limit) && limit >= 1 && limit <= count;
+	const min = field(value, 'minChoices');
+	const max = field(value, 'maxChoices');
+	if (fits(min) && fits(max)) {
+		return min <= max ? { minChoices: min, maxChoices: max } : {};
+	}
+	if (fits(min)) {
+		return { minChoices: min };
+	}
+	return fits(max) ? { maxChoices: max } : {};
 }
 
 function isDateOrDateTime(value: unknown): value is string {

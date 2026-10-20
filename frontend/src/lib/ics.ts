@@ -1,5 +1,5 @@
 /**
- * An iCalendar file (RFC 5545) for one option of a poll, built in the browser.
+ * An iCalendar file (RFC 5545) for one option of a date poll, built in the browser.
  *
  * Whole days are `VALUE=DATE` events, which every calendar shows on that day wherever it is. Times are wall-clock
  * values in the poll's timezone (model.ts); they are converted to UTC (`…Z`), which is exact and needs no VTIMEZONE.
@@ -7,7 +7,7 @@
  */
 
 import { addDays, zonedToUtc } from './dates';
-import type { Poll, PollOption } from './model';
+import type { DateOption, DatePoll } from './model';
 
 export type IcsContext = {
 	/** Makes the UID stable, so that importing the file again updates the event. */
@@ -18,7 +18,7 @@ export type IcsContext = {
 	now: number;
 };
 
-export function buildIcs(poll: Poll, option: PollOption, context: IcsContext): string {
+export function buildIcs(poll: DatePoll, option: DateOption, context: IcsContext): string {
 	const lines = [
 		'BEGIN:VCALENDAR',
 		'VERSION:2.0',
@@ -52,7 +52,7 @@ export function icsFilename(title: string): string {
 	return `${name === '' ? 'timelion' : name}.ics`;
 }
 
-function times(poll: Poll, option: PollOption): string[] {
+function times(poll: DatePoll, option: DateOption): string[] {
 	const [startDate = '', startTime] = option.start.split('T');
 	if (startTime === undefined) {
 		// DTEND of a date is exclusive: the day after the (inclusive) last day.

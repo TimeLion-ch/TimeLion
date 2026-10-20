@@ -1,7 +1,8 @@
 /** The voting form's state and how it becomes a response document (model.ts). */
 
+import type { Params } from './i18n';
 import type { MessageKey } from './i18n.svelte';
-import type { Poll, PollResponse, Vote } from './model';
+import { choiceProblem, type Poll, type PollResponse, type Vote } from './model';
 
 export type ResponseDraft = {
 	name: string;
@@ -26,8 +27,46 @@ export function draftFromResponse(response: PollResponse, poll: Poll): ResponseD
 	return { name: response.name, votes, comment: response.comment ?? '' };
 }
 
-export function validateResponse(draft: ResponseDraft): { name?: MessageKey } {
-	return draft.name.trim() === '' ? { name: 'vote.error.nameRequired' } : {};
+export type ResponseErrors = { name?: MessageKey; choices?: MessageKey };
+
+/** The name, and in text polls the choice limits (model.ts → `choiceProblem`). */
+export function validateResponse(draft: ResponseDraft, poll: Poll): ResponseErrors {
+	const errors: ResponseErrors = {};
+	if (draft.name.trim() === '') {
+		errors.name = 'vote.error.nameRequired';
+	}
+	const problem = choiceProblem(poll, draft.votes);
+	if (problem !== null) {
+		errors.choices = problem === 'tooFew' ? 'vote.error.tooFew' : 'vote.error.tooMany';
+	}
+	return errors;
+}
+
+/** How many options to choose, as a message: "2 to 3", "at least 2", "at most 3", "exactly 2"; null without limits. */
+export function choiceRule(poll: Poll): { key: MessageKey; params: Params } | null {
+	if (poll.type !== 'text') {
+		return null;
+	}
+	const { minChoices: min, maxChoices: max } = poll;
+	if (min !== undefined && max !== undefined) {
+		if (min !== max) {
+			return { key: 'vote.limit.range', params: { min, max } };
+		}
+		return min === 1
+			? { key: 'vote.limit.exactlyOne', params: {} }
+			: { key: 'vote.limit.exactly', params: { count: min } };
+	}
+	if (min !== undefined) {
+		return min === 1
+			? { key: 'vote.limit.atLeastOne', params: {} }
+			: { key: 'vote.limit.atLeast', params: { count: min } };
+	}
+	if (max !== undefined) {
+		return max === 1
+			? { key: 'vote.limit.atMostOne', params: {} }
+			: { key: 'vote.limit.atMost', params: { count: max } };
+	}
+	return null;
 }
 
 /** The response document: trimmed texts, no empty comment, votes only for the poll's options. */

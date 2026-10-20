@@ -6,7 +6,7 @@
 import { serverLimits } from './api';
 import { addDays, todayIn, zonedToUtc } from './dates';
 import type { MessageKey } from './i18n.svelte';
-import { limits, type Poll, type PollOption } from './model';
+import { limits, type DateOption, type DatePoll, type Poll, type PollOption, type TextOption } from './model';
 
 /** A time range on one day; the end is optional, and an end before the start is on the next day. */
 export type DraftSlot = {
@@ -27,21 +27,40 @@ export type DraftDay = {
 	id?: string;
 };
 
+/** An option of a text poll, in the form. */
+export type DraftText = {
+	text: string;
+	/** The option's ID when editing a poll, so that its votes stay. */
+	id?: string;
+};
+
 export type PollDraft = {
 	title: string;
 	description: string;
 	location: string;
+	/** Text polls have a timezone too: the expiry is the end of a day in it. */
 	timezone: string;
 	allowMaybe: boolean;
+	/** Only the options of this type are saved; the others stay in the draft while the form is open. */
+	type: 'dates' | 'text';
 	/** Sorted by date, no duplicates. */
 	days: DraftDay[];
+	/** In the order they are shown. */
+	texts: DraftText[];
+	/** The choice limits of a text poll as typed: whole numbers, or empty for no limit. */
+	minChoices: string;
+	maxChoices: string;
 	/** `YYYY-MM-DD`: the poll is deleted at the end of this day (in its timezone). */
 	expiryDate: string;
 };
 
-export type DraftErrors = Partial<Record<'title' | 'days' | 'expiry', MessageKey>> & {
+export type DraftErrors = Partial<
+	Record<'title' | 'days' | 'texts' | 'minChoices' | 'maxChoices' | 'expiry', MessageKey>
+> & {
 	/** By `slotKey(date, index)`. */
 	slots?: Record<string, MessageKey>;
+	/** By the index in `texts`. */
+	textItems?: Record<number, MessageKey>;
 };
 
 /** How long a poll is kept after its last date, unless the creator chooses otherwise. */
@@ -57,12 +76,18 @@ export function emptyDraft(timezone: string, today: string): PollDraft {
 		location: '',
 		timezone,
 		allowMaybe: true,
+		type: 'dates',
 		days: [],
-		expiryDate: defaultExpiryDate([], today),
+		// Two empty fields to start with: most text polls have at least two options.
+		texts: [{ text: '' }, { text: '' }],
+		minChoices: '',
+		maxChoices: '',
+		expiryDate: defaultExpiryDate({ type: 'dates', days: [] }, today),
 	};
 }
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+const WHOLE_NUMBER = /^\d+$/;
 
 /** Adds the date (as a whole day), or removes it if it is already there. */
 export function toggleDay(days: DraftDay[], date: string): DraftDay[] {
@@ -97,9 +122,9 @@ export function maxExpiryDate(today: string): string {
 	return addDays(today, Math.floor(serverLimits.maxLifetime / 86_400) - 1);
 }
 
-/** 30 days after the last date (or today without dates), capped at the maximum. */
-export function defaultExpiryDate(days: DraftDay[], today: string): string {
-	const last = days.at(-1)?.date ?? today;
+/** 30 days after the last date (after today for text polls and without dates), capped at the maximum. */
+export function defaultExpiryDate(draft: Pick<PollDraft, 'type' | 'days'>, today: string): string {
+	const last = (draft.type === 'dates' ? draft.days.at(-1)?.date : undefined) ?? today;
 	const wanted = addDays(last < today ? today : last, DEFAULT_EXPIRY_DAYS);
 	const max = maxExpiryDate(today);
 	return wanted < max ? wanted : max;
@@ -111,16 +136,43 @@ export function expiresAt(draft: Pick<PollDraft, 'expiryDate' | 'timezone'>, now
 	return Math.min(endOfDay, now + serverLimits.maxLifetime - EXPIRY_MARGIN);
 }
 
-export function optionCount(draft: Pick<PollDraft, 'days'>): number {
+export function optionCount(draft: Pick<PollDraft, 'type' | 'days' | 'texts'>): number {
+	if (draft.type === 'text') {
+		return draft.texts.length;
+	}
 	return draft.days.reduce((count, day) => count + Math.max(1, day.slots.length), 0);
+}
+
+/** A text option as it is saved: control characters (a pasted tab, say) become spaces, and it is trimmed. */
+export function optionText(text: string): string {
+	return text.replace(/[\p{Cc}\p{Cs}]+/gu, ' ').trim();
+}
+
+/** A choice limit as typed: undefined if empty, null unless it is a whole number of at least 1. */
+function choiceLimit(value: string): number | null | undefined {
+	const trimmed = value.trim();
+	if (trimmed === '') {
+		return undefined;
+	}
+	return WHOLE_NUMBER.test(trimmed) && Number(trimmed) >= 1 ? Number(trimmed) : null;
 }
 
 /** @returns the problems by field; empty if the draft can be saved */
 export function validateDraft(draft: PollDraft, today: string): DraftErrors {
-	const errors: DraftErrors = {};
+	const errors: DraftErrors = draft.type === 'text' ? textErrors(draft) : dateErrors(draft);
 	if (draft.title.trim() === '') {
 		errors.title = 'form.error.titleRequired';
 	}
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.expiryDate) || draft.expiryDate < today) {
+		errors.expiry = 'form.error.expiryInvalid';
+	} else if (draft.expiryDate > maxExpiryDate(today)) {
+		errors.expiry = 'form.error.expiryTooLate';
+	}
+	return errors;
+}
+
+function dateErrors(draft: PollDraft): DraftErrors {
+	const errors: DraftErrors = {};
 	const count = optionCount(draft);
 	if (count === 0) {
 		errors.days = 'form.error.datesRequired';
@@ -131,10 +183,46 @@ export function validateDraft(draft: PollDraft, today: string): DraftErrors {
 	if (Object.keys(slots).length > 0) {
 		errors.slots = slots;
 	}
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.expiryDate) || draft.expiryDate < today) {
-		errors.expiry = 'form.error.expiryInvalid';
-	} else if (draft.expiryDate > maxExpiryDate(today)) {
-		errors.expiry = 'form.error.expiryTooLate';
+	return errors;
+}
+
+/** Texts must not be blank or repeat one another (trimmed, ignoring case); the limits must fit the options. */
+function textErrors(draft: PollDraft): DraftErrors {
+	const errors: DraftErrors = {};
+	const count = draft.texts.length;
+	if (count === 0) {
+		errors.texts = 'form.error.optionsRequired';
+	} else if (count > limits.options) {
+		errors.texts = 'form.error.tooManyTextOptions';
+	}
+	const items: Record<number, MessageKey> = {};
+	const seen = new Set<string>();
+	draft.texts.forEach(({ text }, index) => {
+		const normalized = optionText(text).toLowerCase();
+		if (normalized === '') {
+			items[index] = 'form.error.optionTextRequired';
+		} else if (seen.has(normalized)) {
+			items[index] = 'form.error.duplicateOption';
+		}
+		seen.add(normalized);
+	});
+	if (Object.keys(items).length > 0) {
+		errors.textItems = items;
+	}
+
+	const min = choiceLimit(draft.minChoices);
+	const max = choiceLimit(draft.maxChoices);
+	if (min === null) {
+		errors.minChoices = 'form.error.limitInvalid';
+	} else if (typeof min === 'number' && typeof max === 'number' && min > max) {
+		errors.minChoices = 'form.error.limitOrder';
+	} else if (typeof min === 'number' && count > 0 && min > count) {
+		errors.minChoices = 'form.error.limitTooHigh';
+	}
+	if (max === null) {
+		errors.maxChoices = 'form.error.limitInvalid';
+	} else if (typeof max === 'number' && count > 0 && max > count) {
+		errors.maxChoices = 'form.error.limitTooHigh';
 	}
 	return errors;
 }
@@ -161,7 +249,7 @@ function slotErrors(days: DraftDay[]): Record<string, MessageKey> {
 }
 
 /** An option before it gets its ID: an existing one when editing, otherwise a new one. */
-type DraftOption = Omit<PollOption, 'id'> & { id?: string | undefined };
+type DraftOption = Omit<DateOption, 'id'> & { id?: string | undefined };
 
 /** The options of a day in time order: the whole day, or one per slot. */
 function dayOptions(day: DraftDay): DraftOption[] {
@@ -180,34 +268,30 @@ function dayOptions(day: DraftDay): DraftOption[] {
 }
 
 /**
- * The poll document. Texts are trimmed; empty optional texts are left out. Options keep the ID they had when the
- * draft was made from a poll; new options get a random one.
+ * The poll document of the chosen type. Texts are trimmed; empty optional texts are left out. Options keep the ID they
+ * had when the draft was made from a poll; new options get a random one.
  */
 export function buildPoll(draft: PollDraft, randomId: () => string = newOptionId): Poll {
-	const drafted = draft.days.flatMap(dayOptions);
-	const ids = new Set<string>();
-	for (const { id } of drafted) {
-		if (id !== undefined) {
-			ids.add(id);
+	const common = { v: 1, title: draft.title.trim(), timezone: draft.timezone, allowMaybe: draft.allowMaybe } as const;
+	let poll: Poll;
+	if (draft.type === 'text') {
+		const idOf = idAssigner(draft.texts, randomId);
+		const options: TextOption[] = draft.texts.map((item) => ({ id: idOf(item.id), text: optionText(item.text) }));
+		poll = { ...common, type: 'text', options };
+		const min = choiceLimit(draft.minChoices);
+		const max = choiceLimit(draft.maxChoices);
+		if (typeof min === 'number') {
+			poll.minChoices = min;
 		}
+		if (typeof max === 'number') {
+			poll.maxChoices = max;
+		}
+	} else {
+		const drafted = draft.days.flatMap(dayOptions);
+		const idOf = idAssigner(drafted, randomId);
+		const options: DateOption[] = drafted.map(({ id, ...option }) => ({ id: idOf(id), ...option }));
+		poll = { ...common, type: 'dates', options };
 	}
-	const uniqueId = () => {
-		let id = randomId();
-		while (ids.has(id)) {
-			id = randomId();
-		}
-		ids.add(id);
-		return id;
-	};
-	const options: PollOption[] = drafted.map(({ id, ...option }) => ({ id: id ?? uniqueId(), ...option }));
-
-	const poll: Poll = {
-		v: 1,
-		title: draft.title.trim(),
-		timezone: draft.timezone,
-		options,
-		allowMaybe: draft.allowMaybe,
-	};
 	const description = draft.description.trim();
 	if (description !== '') {
 		poll.description = description;
@@ -219,8 +303,55 @@ export function buildPoll(draft: PollDraft, randomId: () => string = newOptionId
 	return poll;
 }
 
+/** Keeps the IDs the options have, and gives the others random IDs that no other option has. */
+function idAssigner(
+	drafted: readonly { id?: string | undefined }[],
+	randomId: () => string,
+): (id: string | undefined) => string {
+	const ids = new Set<string>();
+	for (const { id } of drafted) {
+		if (id !== undefined) {
+			ids.add(id);
+		}
+	}
+	return (id) => {
+		if (id !== undefined) {
+			return id;
+		}
+		let fresh = randomId();
+		while (ids.has(fresh)) {
+			fresh = randomId();
+		}
+		ids.add(fresh);
+		return fresh;
+	};
+}
+
 /** The draft for editing a poll. Options keep their IDs; `expiresAt` (Unix seconds) becomes the expiry date. */
 export function draftFromPoll(poll: Poll, expiresAt: number): PollDraft {
+	const common = {
+		title: poll.title,
+		description: poll.description ?? '',
+		location: poll.location ?? '',
+		timezone: poll.timezone,
+		allowMaybe: poll.allowMaybe,
+		expiryDate: expiryDateOf(expiresAt, poll.timezone),
+	};
+	if (poll.type === 'text') {
+		return {
+			...common,
+			type: 'text',
+			days: [],
+			texts: poll.options.map(({ id, text }) => ({ id, text })),
+			minChoices: poll.minChoices?.toString() ?? '',
+			maxChoices: poll.maxChoices?.toString() ?? '',
+		};
+	}
+	return { ...common, type: 'dates', days: draftDays(poll), texts: [], minChoices: '', maxChoices: '' };
+}
+
+/** The days of a date poll, each with its whole-day option or its slots. */
+function draftDays(poll: DatePoll): DraftDay[] {
 	const days = new Map<string, DraftDay>();
 	for (const option of poll.options) {
 		const [date = '', time] = option.start.split('T');
@@ -232,15 +363,7 @@ export function draftFromPoll(poll: Poll, expiresAt: number): PollDraft {
 			day.slots.push({ id: option.id, start: time, end: option.end?.split('T')[1] ?? '' });
 		}
 	}
-	return {
-		title: poll.title,
-		description: poll.description ?? '',
-		location: poll.location ?? '',
-		timezone: poll.timezone,
-		allowMaybe: poll.allowMaybe,
-		days: [...days.values()].sort((a, b) => (a.date < b.date ? -1 : 1)),
-		expiryDate: expiryDateOf(expiresAt, poll.timezone),
-	};
+	return [...days.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
 }
 
 /** The day (in the timezone) whose end is the expiry. */

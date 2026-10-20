@@ -2,15 +2,16 @@
 
 # TimeLion
 
-TimeLion is a simple, open-source, privacy-focused meeting scheduler. It is **end-to-end encrypted**: polls are encrypted in your browser, and the server only ever stores ciphertext. Use it for free on [timelion.ch](https://timelion.ch) or host it yourself.
+TimeLion is a simple, open-source, privacy-focused meeting scheduler. Participants vote on dates and times, or on text options of the creator's choosing (places, dishes, …), optionally with a minimum and a maximum of choices each. It is **end-to-end encrypted**: polls are encrypted in your browser, and the server only ever stores ciphertext. Use it for free on [timelion.ch](https://timelion.ch) or host it yourself.
 
-> **Status:** being rebuilt. Polls can be created, answered and managed again, end-to-end tests run in CI, and a security review is done; the legal pages and the first production deploy come next (see the [roadmap](roadmap.md)).
+> **Status:** being rebuilt. Polls, with dates or text options, can be created, answered and managed again, end-to-end tests run in CI, and a security review is done; the legal pages and the first production deploy come next (see the [roadmap](roadmap.md)).
 
 ## How it works
 
 - Creating a poll generates a random key in your browser. The key is part of the link after the `#`, a part browsers never send to servers.
 - Titles, options, names and votes are encrypted with that key before upload. Everyone with the link can read and answer the poll; the server can't.
 - No accounts, no cookies, no tracking, no third-party resources. Every poll expires and is then deleted.
+- Because the server never sees votes, it can't enforce the choice limits of text polls: the voting form checks them, but a modified browser could ignore them.
 
 ## Self-hosting
 
