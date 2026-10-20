@@ -53,7 +53,7 @@
 	function toggle(date: string) {
 		draft.days = toggleDay(draft.days, date);
 		if (automaticExpiry !== null && draft.expiryDate === automaticExpiry) {
-			draft.expiryDate = automaticExpiry = defaultExpiryDate(draft.days, today);
+			draft.expiryDate = automaticExpiry = defaultExpiryDate(draft, today);
 		}
 	}
 

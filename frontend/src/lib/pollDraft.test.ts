@@ -13,6 +13,7 @@ import {
 	maxExpiryDate,
 	newOptionId,
 	optionCount,
+	optionText,
 	removedOptions,
 	slotKey,
 	toggleDay,
@@ -21,6 +22,9 @@ import {
 } from './pollDraft';
 
 const today = '2026-10-19';
+
+/** The options of a date poll; none for a text poll. */
+const dated = (poll: Poll) => (poll.type === 'dates' ? poll.options : []);
 
 function draft(changes: Partial<PollDraft> = {}): PollDraft {
 	return {
@@ -83,7 +87,7 @@ describe('time slots', () => {
 				],
 			},
 		];
-		expect(optionCount({ days })).toBe(3);
+		expect(optionCount({ type: 'dates', days, texts: [] })).toBe(3);
 	});
 
 	it('knows when a slot ends on the next day', () => {
@@ -99,14 +103,16 @@ describe('expiry', () => {
 			{ date: '2026-11-03', slots: [] },
 			{ date: '2026-12-01', slots: [] },
 		];
-		expect(defaultExpiryDate(days, today)).toBe('2026-12-31');
-		expect(defaultExpiryDate([], today)).toBe('2026-11-18');
+		expect(defaultExpiryDate({ type: 'dates', days }, today)).toBe('2026-12-31');
+		expect(defaultExpiryDate({ type: 'dates', days: [] }, today)).toBe('2026-11-18');
 		expect(emptyDraft('UTC', today).expiryDate).toBe('2026-11-18');
 	});
 
 	it('is capped at the maximum lifetime', () => {
 		expect(maxExpiryDate(today)).toBe('2027-10-18');
-		expect(defaultExpiryDate([{ date: '2027-10-01', slots: [] }], today)).toBe('2027-10-18');
+		expect(defaultExpiryDate({ type: 'dates', days: [{ date: '2027-10-01', slots: [] }] }, today)).toBe(
+			'2027-10-18',
+		);
 	});
 
 	it('ends with the expiry day in the poll timezone', () => {
@@ -196,7 +202,7 @@ describe('buildPoll', () => {
 		expect(parsePoll(poll)).toEqual(poll);
 		expect(poll).toMatchObject({ v: 1, title: 'Grillabend', location: 'Bern', timezone: 'Europe/Zurich' });
 		expect(poll).not.toHaveProperty('description');
-		expect(poll.options.map((option) => option.start)).toEqual(['2026-11-03', '2026-11-04']);
+		expect(dated(poll).map((option) => option.start)).toEqual(['2026-11-03', '2026-11-04']);
 	});
 
 	it('gives every option a different ID', () => {
@@ -226,12 +232,128 @@ describe('buildPoll', () => {
 			}),
 		);
 		expect(parsePoll(poll)).toEqual(poll);
-		expect(poll.options.map(({ start, end }) => [start, end])).toEqual([
+		expect(dated(poll).map(({ start, end }) => [start, end])).toEqual([
 			['2026-11-03T09:00', undefined],
 			['2026-11-03T09:00', '2026-11-03T10:30'],
 			['2026-11-03T22:00', '2026-11-04T01:00'],
 			['2026-11-04', undefined],
 		]);
+	});
+});
+
+describe('text polls', () => {
+	const textDraft = (changes: Partial<PollDraft> = {}) =>
+		draft({
+			type: 'text',
+			days: [],
+			texts: [{ text: 'Pizza' }, { text: 'Sushi' }, { text: 'Curry' }],
+			...changes,
+		});
+
+	it('start as a date poll, with two empty text options and no limits', () => {
+		expect(emptyDraft('UTC', today)).toMatchObject({
+			type: 'dates',
+			texts: [{ text: '' }, { text: '' }],
+			minChoices: '',
+			maxChoices: '',
+		});
+	});
+
+	it('expire 30 days after today by default, whatever dates were picked', () => {
+		const days = [{ date: '2026-12-01', slots: [] }];
+		expect(defaultExpiryDate({ type: 'text', days }, today)).toBe('2026-11-18');
+		expect(optionCount(textDraft({ days }))).toBe(3);
+	});
+
+	it('validate only the options of the chosen type', () => {
+		// The empty draft has two blank text options and no dates.
+		expect(validateDraft(textDraft(), today)).toEqual({});
+		expect(validateDraft(draft({ texts: [{ text: '' }], minChoices: 'x' }), today)).toEqual({});
+		expect(validateDraft(textDraft({ texts: [] }), today)).toEqual({ texts: 'form.error.optionsRequired' });
+		const tooMany = Array.from({ length: 101 }, (_, index) => ({ text: `Option ${index}` }));
+		expect(validateDraft(textDraft({ texts: tooMany }), today).texts).toBe('form.error.tooManyTextOptions');
+	});
+
+	it('report blank texts and duplicates, trimmed and ignoring case', () => {
+		const texts = [{ text: 'Pizza' }, { text: '  ' }, { text: ' pizza ' }, { text: 'Sushi' }, { text: '\t' }];
+		expect(validateDraft(textDraft({ texts }), today).textItems).toEqual({
+			1: 'form.error.optionTextRequired',
+			2: 'form.error.duplicateOption',
+			4: 'form.error.optionTextRequired',
+		});
+	});
+
+	it.each([
+		['', '', {}],
+		['1', '3', {}],
+		[' 2 ', '2', {}],
+		['03', '', {}],
+		['0', '', { minChoices: 'form.error.limitInvalid' }],
+		['-1', '', { minChoices: 'form.error.limitInvalid' }],
+		['1.5', '', { minChoices: 'form.error.limitInvalid' }],
+		['', 'zwei', { maxChoices: 'form.error.limitInvalid' }],
+		['', '1e1', { maxChoices: 'form.error.limitInvalid' }],
+		['3', '2', { minChoices: 'form.error.limitOrder' }],
+		['4', '', { minChoices: 'form.error.limitTooHigh' }],
+		['', '4', { maxChoices: 'form.error.limitTooHigh' }],
+		['5', '4', { minChoices: 'form.error.limitOrder', maxChoices: 'form.error.limitTooHigh' }],
+	])('check the limits %j to %j for three options', (minChoices, maxChoices, errors) => {
+		expect(validateDraft(textDraft({ minChoices, maxChoices }), today)).toEqual(errors);
+	});
+
+	it('compare the limits with the options only once there are options', () => {
+		expect(validateDraft(textDraft({ texts: [], minChoices: '2' }), today)).toEqual({
+			texts: 'form.error.optionsRequired',
+		});
+	});
+
+	it('build a text poll with the options in order and the limits as numbers', () => {
+		const ids = ['aaaaaaaa', 'aaaaaaaa', 'bbbbbbbb', 'cccccccc'];
+		const poll = buildPoll(
+			textDraft({
+				texts: [{ text: ' Sushi ' }, { text: 'Pizza\tmit\u0000Oliven' }, { text: 'Curry' }],
+				minChoices: '1',
+				maxChoices: ' 2 ',
+				days: [{ date: '2026-11-03', slots: [] }],
+			}),
+			() => ids.shift()!,
+		);
+		expect(poll).toEqual({
+			v: 1,
+			type: 'text',
+			title: 'Grillabend',
+			timezone: 'Europe/Zurich',
+			allowMaybe: true,
+			options: [
+				{ id: 'aaaaaaaa', text: 'Sushi' },
+				{ id: 'bbbbbbbb', text: 'Pizza mit Oliven' },
+				{ id: 'cccccccc', text: 'Curry' },
+			],
+			minChoices: 1,
+			maxChoices: 2,
+		});
+		expect(parsePoll(poll)).toEqual(poll);
+	});
+
+	it('leave out empty limits, and keep the IDs of existing options', () => {
+		const poll = buildPoll(textDraft({ texts: [{ text: 'Pizza', id: '0a1b2c3d' }, { text: 'Sushi' }] }));
+		expect(poll).not.toHaveProperty('minChoices');
+		expect(poll).not.toHaveProperty('maxChoices');
+		expect(poll.options[0]).toEqual({ id: '0a1b2c3d', text: 'Pizza' });
+		expect(poll.options[1]?.id).not.toBe('0a1b2c3d');
+	});
+
+	it('are left out of a date poll', () => {
+		const poll = buildPoll(draft({ texts: [{ text: 'Pizza' }], minChoices: '1' }));
+		expect(poll.type).toBe('dates');
+		expect(poll).not.toHaveProperty('minChoices');
+		expect(dated(poll)).toHaveLength(1);
+	});
+
+	it('turn control characters into spaces', () => {
+		expect(optionText(' a\tb\r\nc\u0085 ')).toBe('a b c');
+		expect(optionText('Pizza\ud83e')).toBe('Pizza');
+		expect(optionText('🦁 Löwe')).toBe('🦁 Löwe');
 	});
 });
 
@@ -288,7 +410,7 @@ describe('editing a poll', () => {
 		draft.days[1]!.slots[0]!.end = '23:00';
 		draft.days = toggleDay(draft.days, '2026-11-07');
 		const edited = editedPoll(poll, draft, () => 'eeeeeeee');
-		expect(edited.options.find((option) => option.id === 'bbbbbbbb')?.end).toBe('2026-11-04T23:00');
+		expect(dated(edited).find((option) => option.id === 'bbbbbbbb')?.end).toBe('2026-11-04T23:00');
 		expect(edited.options.at(-1)).toEqual({ id: 'eeeeeeee', start: '2026-11-07' });
 		expect(removedOptions(poll, edited)).toEqual([]);
 	});
