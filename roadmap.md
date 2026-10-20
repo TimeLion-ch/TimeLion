@@ -270,6 +270,9 @@ Polls whose options are free texts ("Pizza", "Sushi", …) instead of dates, wit
   - Two optional number fields, shown for text polls only: the minimum and the maximum of choices per participant. Empty means no limit.
   - `pollDraft.ts`: the draft gets the type, the text options (with their IDs when editing, like slots) and both limits. `validateDraft` reports missing options, blank or duplicate texts (trimmed, ignoring case), limits that aren't whole numbers, a minimum above the maximum, and a limit above the number of options. `buildPoll` writes the text options in order. A text poll's default expiry is 30 days after today. Text polls keep a `timezone`, because the expiry is the end of a day in it, but the form shows it only for dates.
   - Done when: Vitest covers the draft rules, and an end-to-end test creates a text poll with limits and sees its options on the poll page.
+  - Split, because it is over 400 lines:
+    - [ ] **6.2a Draft rules**: `pollDraft.ts` gets the type, the text options and the limits: `validateDraft`, `buildPoll` and the default expiry of text polls.
+    - [ ] **6.2b The form**: the type choice, the text option list and the limit fields in `PollForm`, and the end-to-end test.
 - [ ] **6.3 Voting with choice limits**. Depends on 6.2.
   - In text polls with limits, the voting form says how many options to choose ("2 to 3", "at least 2", "at most 3", "exactly 2") and counts the choices so far. `validateResponse` takes the poll and reports `choiceProblem`; like the name error, it shows after the first submit and then follows every change.
   - Editing one of your responses that no longer fits changed limits shows the error until it is fixed.
