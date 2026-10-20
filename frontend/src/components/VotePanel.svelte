@@ -203,15 +203,19 @@
 	{/if}
 
 	{#if showForm}
-		<ResponseForm
-			{poll}
-			bind:draft
-			submitLabel={editing === null ? t('vote.submit') : t('vote.saveChanges')}
-			{busy}
-			error={error && t(error)}
-			onsubmit={save}
-			oncancel={ownResponses.length > 0 || editing !== null ? closeForm : undefined}
-		/>
+		<!-- A new form for every response, so that each starts with its own state of validation. -->
+		{#key editing}
+			<ResponseForm
+				{poll}
+				bind:draft
+				submitLabel={editing === null ? t('vote.submit') : t('vote.saveChanges')}
+				editing={editing !== null}
+				{busy}
+				error={error && t(error)}
+				onsubmit={save}
+				oncancel={ownResponses.length > 0 || editing !== null ? closeForm : undefined}
+			/>
+		{/key}
 	{:else}
 		{#if error !== undefined}
 			<Notice kind="error" role="alert"><p>{t(error)}</p></Notice>

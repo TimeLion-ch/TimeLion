@@ -275,10 +275,11 @@ Polls whose options are free texts ("Pizza", "Sushi", …) instead of dates, wit
     - [x] **6.2a Draft rules**: `pollDraft.ts` gets the type, the text options and the limits: `validateDraft`, `buildPoll` and the default expiry of text polls. — done 2026-10-20
       - Next: `PollDraft` has `type`, `texts` (`{ text, id? }`) and the limits as typed strings (`minChoices`, `maxChoices`); `emptyDraft` starts with two empty texts. Errors per text are `textItems` by index. `optionText()` turns control characters into spaces, as 6.1 requires. `defaultExpiryDate` takes the draft.
     - [x] **6.2b The form**: the type choice, the text option list and the limit fields in `PollForm`, and the end-to-end test. — done 2026-10-20
-- [ ] **6.3 Voting with choice limits**. Depends on 6.2.
+- [x] **6.3 Voting with choice limits**. Depends on 6.2. — done 2026-10-20
   - In text polls with limits, the voting form says how many options to choose ("2 to 3", "at least 2", "at most 3", "exactly 2") and counts the choices so far. `validateResponse` takes the poll and reports `choiceProblem`; like the name error, it shows after the first submit and then follows every change.
   - Editing one of your responses that no longer fits changed limits shows the error until it is fixed.
   - Done when: Vitest covers the response draft rules, and an end-to-end test chooses too many options, sees the error, fixes it and saves.
+  - Next: `choiceRule(poll)` (responseDraft.ts) gives the hint's message key and parameters. `ResponseForm` takes `editing`, and `VotePanel` re-creates it for every response it opens (`{#key editing}`). `createTextPoll()` in `e2e/text-poll.spec.ts` creates a poll through the form.
 - [ ] **6.4 Editing text polls** (admin panel). Depends on 6.2.
   - `draftFromPoll` and `editedPoll` handle text polls. Editing an option's text keeps its ID and its votes, as editing a slot's time does; removed options get the existing warning about their votes. The admin can change the limits; responses that no longer fit stay as they are (6.1).
   - The type can't change after creation, because that would drop every vote: the edit form doesn't offer the choice.
