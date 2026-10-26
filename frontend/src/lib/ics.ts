@@ -41,17 +41,6 @@ export function buildIcs(poll: DatePoll, option: DateOption, context: IcsContext
 	return lines.map(fold).join('\r\n') + '\r\n';
 }
 
-/** A file name from the title: letters, digits, spaces and dashes only. */
-export function icsFilename(title: string): string {
-	const name = title
-		.normalize('NFC')
-		.replace(/[^\p{L}\p{N} _-]+/gu, '')
-		.trim()
-		.replace(/\s+/g, '-')
-		.slice(0, 60);
-	return `${name === '' ? 'timelion' : name}.ics`;
-}
-
 function times(poll: DatePoll, option: DateOption): string[] {
 	const [startDate = '', startTime] = option.start.split('T');
 	if (startTime === undefined) {

@@ -296,9 +296,13 @@ Polls whose options are free texts ("Pizza", "Sushi", …) instead of dates, wit
 - [ ] **7.5** Comments on polls
 - [ ] **7.6** Notifications 🧭 this means storing e-mail addresses, a privacy trade-off; perhaps opt-in "someone voted" mails without content
 - [ ] **7.7** Reproducible builds and a published hash of `index.html`, so users can verify the code they are served
+- [x] **7.8 Export the results** — done 2026-10-26
+  - Below the comments on the poll page, download the results as an Excel workbook or a CSV file, built in the browser: the options as columns, a row per participant with their votes, the totals, the time zone if options have times, and the comments below. Like the calendar file, it never contains the poll's link.
+  - Next: `resultSheet` (export.ts) builds the rows once for both formats. `toCsv` writes RFC 4180 with a byte order mark and an apostrophe before texts that start like a formula; `buildXlsx` (xlsx.ts) writes inline strings into a stored ZIP (zip.ts), without a library. `downloadFile` and `fileName` (download.ts) replace `downloadText` and `icsFilename`.
 
 ## Inbox
 
 Things noticed during other tasks, to be sorted into the phases above:
 
 - Rate limits (1.10) count IPv6 clients per full address, so a client with a /64 prefix can switch addresses to get fresh limits. Consider counting IPv6 per /64 (the bucket would then cover the prefix, not the address).
+- `composer check` fails locally (PHP 8.5.12, PHPStan 2.3.1) with one error in code that hasn't changed (noticed during 7.8): `bin/migrate.php:18: Variable $argv might not be defined.` Read the arguments from `$_SERVER['argv']`, or check that CI sees the same error.
