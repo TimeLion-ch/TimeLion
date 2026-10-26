@@ -10,7 +10,7 @@
 		<span>{t('footer.copyright', { year })}</span>
 		<span class="links">
 			<a href="/privacy" use:link>{t('footer.privacy')}</a>
-			<a href="https://github.com/TimeLion-ch/TimeLion" rel="noreferrer" target="_blank">{t('footer.source')}</a>
+			<a href="https://github.com/xLion-ch/TimeLion" rel="noreferrer" target="_blank">{t('footer.source')}</a>
 		</span>
 	</div>
 </footer>

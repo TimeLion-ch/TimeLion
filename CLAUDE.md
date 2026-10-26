@@ -2,7 +2,7 @@
 
 TimeLion ([timelion.ch](https://timelion.ch)) is a privacy-focused meeting scheduler. Someone creates a poll with date and time options and shares the link. Participants answer yes, maybe or no for each option, and the group picks a date. Polls are **end-to-end encrypted in the browser**, so the server only ever stores ciphertext.
 
-**Status:** the API, the frontend logic and the UI are done (roadmap Phases 0–3): polls can be created, answered, edited, closed and deleted. Of Phase 4, everything but the legal pages (4.2) is done: end-to-end tests, security.txt, the security review, the AGPL license, the logo license and the brand font. Phase 6 is done too: text polls, whose options are free texts, with an optional minimum and maximum of choices. Further work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
+**Status:** polls with dates or text options can be created, answered, edited, closed, deleted and exported. Further work follows [roadmap.md](roadmap.md). Read its "How to work on this roadmap" section before starting a task.
 
 ## Stack
 
@@ -73,7 +73,7 @@ rate_limits (bucket CHAR(64) PK, window_start BIGINT, hits INTEGER)
 .htaccess                   the document root is the app root: rewrites every request into public/
 .github/workflows/ci.yml    CI (PHP 8.3–8.5 on SQLite, PHP 8.3 on MariaDB, frontend, end-to-end) and deploy (main → FTP with TLS)
 .github/scripts/            deploy-ftp.sh: upload over FTP, then migrations via one-time token
-SECURITY.md                 how to report vulnerabilities (GitHub private reporting), scope
+SECURITY.md                 how to report vulnerabilities (GitHub private reporting, which must stay on under Settings → Security), scope
 bin/migrate.php             apply migrations; --status lists them
 bin/purge.php               delete expired data (optional cron job; requests also purge, see Maintenance/)
 config.example.php          template for config.php (gitignored, lives only on the server)
@@ -142,11 +142,11 @@ npm --prefix frontend run build
 ## Backend conventions
 
 - Use `declare(strict_types=1)`, `final` classes, `readonly` where possible, and tabs. PHPStan level max must pass without ignores or a baseline.
-- Each endpoint is one invokable action class in `src/Http/Action/`, registered in `src/Routes.php`. Dependencies come in through the constructor (PHP-DI autowiring). SQL belongs in repository classes (`src/Repository/`, created in roadmap 1.4), not in actions.
+- Each endpoint is one invokable action class in `src/Http/Action/`, registered in `src/Routes.php`. Dependencies come in through the constructor (PHP-DI autowiring). SQL belongs in repository classes (`src/Repository/`), not in actions.
 - **Input:** call `Json::decodeBody($request, $maxBytes)` and validate every field explicitly. Report problems with `ApiError::badRequest('snake_case_code', 'English message')`.
 - **Output:** use `Json::response()`. JSON field names are camelCase and SQL columns snake_case. Timestamps are integers (Unix seconds).
 - **Errors:** throw `ApiError` (HTTP status plus a stable code). `ErrorHandler` renders `{"error": {"code", "message"}}` and logs only 5xx errors. Messages never contain user data.
-- **Time and randomness:** inject a clock (roadmap 1.2) instead of calling `time()` in domain code, so expiry stays testable. Use only `random_bytes()`.
+- **Time and randomness:** inject the `Clock` instead of calling `time()` in domain code, so expiry stays testable. Use only `random_bytes()`.
 - Slim binds route closures to the container, so route closures in tests must not be `static`.
 - Every endpoint gets an HTTP-level test in `tests/Http/` built on `AppTestCase`.
 - Apache's `.htaccess` headers replace any header of the same name set by PHP (for example the CSP on API responses). Both versions are strict, so this is intended.

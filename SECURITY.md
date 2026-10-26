@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report security problems privately through GitHub: [report a vulnerability](https://github.com/TimeLion-ch/TimeLion/security/advisories/new) (Security tab → "Report a vulnerability"). Don't open a public issue. English or German is fine.
+Please report security problems privately through GitHub: [report a vulnerability](https://github.com/xLion-ch/TimeLion/security/advisories/new) (Security tab → "Report a vulnerability"). Don't open a public issue. English or German is fine.
 
 Helpful in a report: what is affected, how to reproduce it, and what an attacker gains. We will reply as soon as we can, keep you updated while we work on a fix, and credit you in the advisory if you like. There is no bug bounty.
 

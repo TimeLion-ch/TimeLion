@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace TimeLion\Polls;
 
 /**
- * The limits of the poll API contract (roadmap Phase 1). Sizes are bytes of the ciphertext envelope.
+ * The limits of the poll API contract (docs/api.md → Formats and limits). Sizes are bytes of the ciphertext envelope.
  */
 final class Limits
 {

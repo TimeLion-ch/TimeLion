@@ -1,7 +1,7 @@
 # Security contact of the TimeLion project (RFC 9116). Please report vulnerabilities privately, not in public issues.
 # Renew Expires before it passes (at most a year ahead); tests/SecurityTxtTest.php fails 30 days before.
 
-Contact: https://github.com/TimeLion-ch/TimeLion/security/advisories/new
+Contact: https://github.com/xLion-ch/TimeLion/security/advisories/new
 Expires: 2027-10-18T00:00:00.000Z
 Preferred-Languages: en, de
-Policy: https://github.com/TimeLion-ch/TimeLion/security/policy
+Policy: https://github.com/xLion-ch/TimeLion/security/policy
