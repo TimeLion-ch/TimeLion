@@ -238,5 +238,9 @@
 	"privacy.title": "Privacy policy",
 	"privacy.loading": "Loading the privacy policy …",
 	"privacy.missing": "No privacy policy has been set up for this installation yet.",
-	"privacy.germanOnly": "This privacy policy is only available in German."
+	"privacy.germanOnly": "This privacy policy is only available in German.",
+	"export.excel": "Download as Excel",
+	"export.csv": "Download as CSV",
+	"export.hint": "The file is created in your browser. It contains the options, the names, the answers and the comments, but not the link to the poll.",
+	"export.sheet": "Responses"
 }

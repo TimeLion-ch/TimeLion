@@ -3,17 +3,18 @@
 	import Button from '../components/Button.svelte';
 	import CommentList from '../components/CommentList.svelte';
 	import EditPoll from '../components/EditPoll.svelte';
+	import ExportResults from '../components/ExportResults.svelte';
 	import Notice from '../components/Notice.svelte';
 	import ResultsList from '../components/ResultsList.svelte';
 	import ResultsTable from '../components/ResultsTable.svelte';
 	import ShareScreen from '../components/ShareScreen.svelte';
 	import VotePanel from '../components/VotePanel.svelte';
 	import { deviceStore, type ResponseRef } from '../lib/deviceStore';
-	import { downloadText } from '../lib/download';
+	import { downloadFile, fileName } from '../lib/download';
 	import { loadProblem, type LoadProblem } from '../lib/errors';
 	import { formatTimestamp, optionLabel } from '../lib/format';
 	import { i18n, t } from '../lib/i18n.svelte';
-	import { buildIcs, icsFilename } from '../lib/ics';
+	import { buildIcs } from '../lib/ics';
 	import { parseFragment } from '../lib/links';
 	import { loadPoll, type LoadedPoll } from '../lib/polls';
 	import { hasTimes } from '../lib/results';
@@ -74,7 +75,7 @@
 			return;
 		}
 		const ics = buildIcs(poll, option, { pollId: id, host: location.hostname, now: Date.now() });
-		downloadText(icsFilename(poll.title), ics, 'text/calendar;charset=utf-8');
+		downloadFile(fileName(poll.title, 'ics'), ics, 'text/calendar;charset=utf-8');
 	}
 
 	async function finishEdit(saved: boolean) {
@@ -207,6 +208,9 @@
 				<ResultsList {poll} responses={loaded.responses} own={ownIds} />
 			</div>
 			<CommentList responses={loaded.responses} />
+			{#if loaded.responses.length > 0}
+				<ExportResults {poll} responses={loaded.responses} />
+			{/if}
 		</section>
 
 		{#if loaded.meta.closedAt === null && fragment !== null}

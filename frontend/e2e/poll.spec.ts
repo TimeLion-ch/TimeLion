@@ -72,6 +72,36 @@ test('a poll from creation to deletion, without the server seeing its content', 
 		]);
 	});
 
+	await test.step('export the results', async () => {
+		const csvDownload = participant.waitForEvent('download');
+		await participant.getByRole('button', { name: 'Download as CSV' }).click();
+		expect((await csvDownload).suggestedFilename()).toBe('Team-dinner.csv');
+		const csv = (await readFile(await (await csvDownload).path(), 'utf8')).split('\r\n');
+		expect(csv[0]).toMatch(/^﻿Participant,"\w{3}, \d+ \w{3} \d{4}","\w{3}, \d+ \w{3} \d{4}"$/);
+		expect(csv.slice(1)).toEqual([
+			`${name},Yes,Yes`,
+			'Total yes,1,1',
+			'Total maybe,0,0',
+			'',
+			'Comments',
+			`${name},${comment}`,
+			'',
+		]);
+
+		const xlsxDownload = participant.waitForEvent('download');
+		await participant.getByRole('button', { name: 'Download as Excel' }).click();
+		expect((await xlsxDownload).suggestedFilename()).toBe('Team-dinner.xlsx');
+		// Stored uncompressed, so the worksheet's XML is readable in the file as it is.
+		const xlsx = (await readFile(await (await xlsxDownload).path())).toString('utf8');
+		expect(xlsx.startsWith('PK\u0003\u0004')).toBe(true);
+		expect(xlsx).toContain(`<c r="A2" t="inlineStr"><is><t xml:space="preserve">${name}</t></is></c>`);
+		expect(xlsx).toContain(`<t xml:space="preserve">${comment}</t>`);
+
+		for (const file of [csv.join('\r\n'), xlsx]) {
+			expect(file).not.toContain(key);
+		}
+	});
+
 	await test.step('close the poll as admin', async () => {
 		await page.reload();
 		await expect(page.getByRole('row', { name })).toBeVisible();

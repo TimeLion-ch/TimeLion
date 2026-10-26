@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIcs, escapeText, fold, icsFilename } from './ics';
+import { buildIcs, escapeText, fold } from './ics';
 import type { DatePoll } from './model';
 
 const poll: DatePoll = {
@@ -107,13 +107,5 @@ describe('fold', () => {
 		const line = `SUMMARY:${'🦁'.repeat(40)}`;
 		expect(fold(line).replaceAll('\r\n ', '')).toBe(line);
 		expect(fold(line)).not.toMatch(/�/);
-	});
-});
-
-describe('icsFilename', () => {
-	it('makes a safe file name', () => {
-		expect(icsFilename('Grillabend: Team/Bern 2026')).toBe('Grillabend-TeamBern-2026.ics');
-		expect(icsFilename('Zoë’s Fest')).toBe('Zoës-Fest.ics');
-		expect(icsFilename('../../')).toBe('timelion.ics');
 	});
 });

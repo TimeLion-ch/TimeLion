@@ -238,5 +238,9 @@
 	"privacy.title": "Datenschutzerklärung",
 	"privacy.loading": "Die Datenschutzerklärung wird geladen …",
 	"privacy.missing": "Für diese Installation ist noch keine Datenschutzerklärung hinterlegt.",
-	"privacy.germanOnly": "Diese Datenschutzerklärung gibt es nur auf Deutsch."
+	"privacy.germanOnly": "Diese Datenschutzerklärung gibt es nur auf Deutsch.",
+	"export.excel": "Als Excel herunterladen",
+	"export.csv": "Als CSV herunterladen",
+	"export.hint": "Die Datei wird in deinem Browser erstellt. Sie enthält die Optionen, die Namen, die Antworten und die Kommentare, aber nicht den Link zur Umfrage.",
+	"export.sheet": "Antworten"
 }

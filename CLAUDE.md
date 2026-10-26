@@ -89,8 +89,8 @@ frontend/
                             Calendar) and the parts of the pages (PollForm, ResultsTable, VotePanel, AdminPanel, …)
   src/routes/               one component per page: Home, CreatePoll, PollPage, MyPolls, PrivacyPolicy, NotFound
   src/lib/                  logic: api.ts, base64url.ts, crypto.ts, dates.ts, deviceStore.ts, download.ts, errors.ts,
-                            format.ts, i18n.ts + i18n.svelte.ts, ics.ts, links.ts, markup.ts, model.ts, pollDraft.ts, polls.ts,
-                            responseDraft.ts, results.ts, routes.ts + router.svelte.ts, storage.ts
+                            export.ts, format.ts, i18n.ts + i18n.svelte.ts, ics.ts, links.ts, markup.ts, model.ts, pollDraft.ts,
+                            polls.ts, responseDraft.ts, results.ts, routes.ts + router.svelte.ts, storage.ts, xlsx.ts, zip.ts
   src/locales/{de,en}.json  translations (de.json is the source of truth for keys)
 migrations/                 NNNN_description.sql
 public/                     web root on the server
@@ -164,6 +164,7 @@ npm --prefix frontend run build
 - All UI text goes through `t('key')` from `i18n.svelte.ts`. Add each key to every file in `src/locales/`; a test enforces identical keys and placeholders. German copy uses Swiss spelling (ss, never ß) and the informal "du".
 - **CSS:** global tokens live in `src/app.css`; components use scoped `<style>` blocks. **No `style="…"` attributes in markup**, because the hash-based CSP blocks them. Use classes, or `style:` directives where something must be dynamic. SVG colours use presentation attributes (`fill="…"`). The colour tokens meet WCAG AA in both themes (text 4.5:1, focus ring and control borders 3:1); keep it that way. The font is Plus Jakarta Sans, a Latin subset with weights 400–800 that the build inlines as a `data:` URI (`font-src data:` in the CSP); `src/assets/fonts/README.md` says how to rebuild it, and it stays under 40 KiB. The layout must work at 360 px; text from polls gets `overflow-wrap: anywhere`. Absolutely positioned content (such as `.visually-hidden`) inside a scroll box needs a positioned ancestor, or it widens the page.
 - API calls go only through `src/lib/api.ts`; pass tokens with the `token` option. localStorage goes only through `src/lib/storage.ts`, which never throws. Treat everything stored there as optional.
+- Files for download (the calendar file, the CSV and Excel export) are built in the browser and saved as a Blob with `downloadFile` (`download.ts`), so their content never leaves the browser and the CSP needs nothing extra. They never contain the poll's link. Their texts come from whoever has the link: CSV cells that start like a formula get an apostrophe in front, the Excel workbook stores texts as inline strings, and characters a format can't hold are dropped.
 - Components handle poll data through `src/lib/polls.ts`, which encrypts before sending and validates after decrypting (`model.ts`), not through `crypto.ts` or the poll endpoints of `api.ts`. Links are built and parsed in `links.ts`; the polls saved in this browser (keys and tokens) go through `deviceStore.ts`.
 - Prettier formats everything (tabs, single quotes, 120-character lines).
 - End-to-end tests (`e2e/*.spec.ts`) import `test` and `expect` from `e2e/fixtures.ts`. Its guard fails a test on a CSP violation, an uncaught error or a request to another origin (which it also blocks); `newPage()` opens another person's browser with its own storage. Use roles and labels from `en.json` as selectors (the tests run in `en-GB`).
